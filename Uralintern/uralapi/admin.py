@@ -3,7 +3,7 @@ import random
 import string
 
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, UserCreationForm as BaseCreationForm
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.forms import forms
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -55,7 +55,7 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Trainee)
 class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
-    change_list_template = "admin/mobile_app/trainee_changelist.html"
+    change_list_template = "admin/uralapi/trainee_changelist.html"
     list_display = ('user', 'internship', 'speciality', 'team', 'role', 'curator', 'date_start')
 
     def get_urls(self):
@@ -82,7 +82,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
         form = CsvImportForm()
         payload = {"form": form}
         return render(
-            request, "admin/mobile_app/csv_form.html", payload
+            request, "admin/uralapi/csv_form.html", payload
         )
 
     # TODO решить вопрос с сохранением ссылок на куратора и команду

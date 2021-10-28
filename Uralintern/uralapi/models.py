@@ -46,17 +46,17 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(db_index=True, max_length=255, unique=True)  # username - ФИО
-    email = models.EmailField(db_index=True, unique=True)
-    is_active = models.BooleanField(default=True)
+    username = models.CharField(db_index=True, max_length=255, verbose_name="ФИО")  # username - ФИО
+    email = models.EmailField(db_index=True, unique=True, verbose_name="Почта")
+    is_active = models.BooleanField(default=True, verbose_name="Активный пользователь")
     is_staff = models.BooleanField(default=False)
     ROLES = (
         ('CURATOR', 'Куратор'),
         ('EXPERT', 'Эксперт'),
         ('TRAINEE', 'Стажер')
     )
-    system_role = models.CharField(max_length=50, choices=ROLES, default="TRAINEE")
-    created_at = models.DateTimeField(auto_now_add=True)
+    system_role = models.CharField(max_length=50, choices=ROLES, default="TRAINEE", verbose_name="Роль пользователя")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата регистрации")
     updated_at = models.DateTimeField(auto_now=True)
     # Дополнительный поля, необходимые Django
     # при указании кастомной модели пользователя.
@@ -107,70 +107,103 @@ class User(AbstractBaseUser, PermissionsMixin):
 
         return token
 
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+
 
 class Trainee(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    internship = models.CharField(max_length=150, blank=True)
-    course = models.PositiveSmallIntegerField(blank=True, null=True)
-    speciality = models.CharField(max_length=150, blank=True)
-    institution = models.CharField(max_length=150, blank=True)
-    team = models.OneToOneField('Team', on_delete=models.CASCADE, blank=True, null=True)
-    role = models.CharField(max_length=100, blank=True)
-    curator = models.ForeignKey('Curator', on_delete=models.CASCADE, blank=True, null=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="ФИО")
+    internship = models.CharField(max_length=150, blank=True, verbose_name="Напр. стажировки")
+    course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс")
+    speciality = models.CharField(max_length=150, blank=True, verbose_name="Специальность")
+    institution = models.CharField(max_length=150, blank=True, verbose_name="Место обучения")
+    team = models.OneToOneField('Team', on_delete=models.CASCADE, blank=True, null=True, verbose_name="Команда")
+    role = models.CharField(max_length=100, blank=True, verbose_name="Роль")
+    curator = models.ForeignKey('Curator', on_delete=models.CASCADE, blank=True, null=True, verbose_name="Куратор")
     # image = ...
-    date_start = models.DateField(auto_created=True)
+    date_start = models.DateField(auto_created=True, verbose_name="Дата старта")
 
     def __str__(self):
         return self.user.__str__()
+
+    class Meta:
+        verbose_name = "Стажер"
+        verbose_name_plural = "Стажеры"
 
 
 class Curator(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    vk_url = models.URLField(blank=True, null=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="ФИО")
+    vk_url = models.URLField(blank=True, null=True, verbose_name="Ссылка в ВК")
 
     def __str__(self):
         return self.user.__str__()
+
+    class Meta:
+        verbose_name = "Куратор"
+        verbose_name_plural = "Кураторы"
 
 
 class Expert(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="ФИО")
 
     def __str__(self):
         return self.user.__str__()
 
+    class Meta:
+        verbose_name = "Эксперт"
+        verbose_name_plural = "Эксперты"
+
 
 class Team(models.Model):
-    team_name = models.CharField(max_length=90)
-    curator = models.ForeignKey('Curator', on_delete=models.CASCADE)
+    team_name = models.CharField(max_length=90, verbose_name="Название команды")
+    curator = models.ForeignKey('Curator', on_delete=models.CASCADE, verbose_name="Куратор")
 
     def __str__(self):
         return self.team_name
 
+    class Meta:
+        verbose_name = "Команда"
+        verbose_name_plural = "Команды"
+
 
 class Stage(models.Model):
-    stage_name = models.CharField(max_length=150)
-    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    stage_name = models.CharField(max_length=150, verbose_name="Этап")
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, verbose_name="Мероприятие")
     date = models.DateField()
 
     def __str__(self):
         return self.stage_name
 
+    class Meta:
+        verbose_name = "Этап"
+        verbose_name_plural = "Этапы"
 
 class Event(models.Model):
-    event_name = models.CharField(max_length=150)
+    event_name = models.CharField(max_length=150, verbose_name="Название мероприятия")
     date = models.DateField()
 
     def __str__(self):
         return self.event_name
 
+    class Meta:
+        verbose_name = "Мероприятие"
+        verbose_name_plural = "Мероприятия"
 
 class Grade(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE)
-    team = models.ForeignKey('Team', on_delete=models.CASCADE)
-    stage = models.ForeignKey('Stage', on_delete=models.CASCADE)
-    competence = models.SmallIntegerField()
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Имя оценщика")
+    trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE, verbose_name="Имя оцениваемого")
+    team = models.ForeignKey('Team', on_delete=models.CASCADE, verbose_name="Команда")
+    stage = models.ForeignKey('Stage', on_delete=models.CASCADE, verbose_name="Этап")
+    competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность")
+    competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность")
+    competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость")
+    competence4 = models.SmallIntegerField(blank=True, null=True, verbose_name="Командность")
     date = models.DateTimeField(auto_created=True)
+
+    class Meta:
+        verbose_name = "Оценка"
+        verbose_name_plural = "Оценки"
 
 # TODO временное решение для хранения пароля, заменить
 class LoginData(models.Model):
@@ -178,6 +211,9 @@ class LoginData(models.Model):
     password = models.CharField(max_length=20)
     email = models.EmailField(max_length=100)
 
+    class Meta:
+        verbose_name = "Данные"
+        verbose_name_plural = "Данные"
 
 @receiver(post_save, sender=User)
 def create_profiles(sender, instance : User, created, **kwargs):
