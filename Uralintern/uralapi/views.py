@@ -1,10 +1,13 @@
 from rest_framework import status
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
+from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .renderers import UserJSONRenderer
-from .serializers import LoginSerializer
+from .serializers import (
+    LoginSerializer, UserSerializer,
+)
 
 # Create your views here.
 
@@ -21,5 +24,18 @@ class LoginAPIView(APIView):
         # нечего сохранять. Вместо этого, метод validate() делает все нужное.
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (UserJSONRenderer,)
+    serializer_class = UserSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        # Здесь нечего валидировать или сохранять. Мы просто хотим, чтобы
+        # сериализатор обрабатывал преобразования объекта User во что-то, что
+        # можно привести к json и вернуть клиенту.
+        serializer = self.serializer_class(request.user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)

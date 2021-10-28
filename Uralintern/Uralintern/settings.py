@@ -30,6 +30,14 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'Uralintern.exceptions.core_exception_handler',
+    'NON_FIELD_ERRORS_KEY': 'error',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+            'uralapi.backends.JWTAuthentication',
+        ),
+}
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+from .models import User
 
 
 class LoginSerializer(serializers.Serializer):
@@ -58,3 +59,27 @@ class LoginSerializer(serializers.Serializer):
             'username': user.username,
             'token': user.token
         }
+
+class UserSerializer(serializers.ModelSerializer):
+    """ Ощуществляет сериализацию и десериализацию объектов User. """
+
+    # Пароль должен содержать от 8 до 128 символов. Это стандартное правило. Мы
+    # могли бы переопределить это по-своему, но это создаст лишнюю работу для
+    # нас, не добавляя реальных преимуществ, потому оставим все как есть.
+    password = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        write_only=True
+    )
+
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'password', 'token',)
+
+        # Параметр read_only_fields является альтернативой явному указанию поля
+        # с помощью read_only = True, как мы это делали для пароля выше.
+        # Причина, по которой мы хотим использовать здесь 'read_only_fields'
+        # состоит в том, что нам не нужно ничего указывать о поле. В поле
+        # пароля требуются свойства min_length и max_length,
+        # но это не относится к полю токена.
+        read_only_fields = ('token',)
