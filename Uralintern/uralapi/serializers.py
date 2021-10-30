@@ -83,6 +83,12 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('token',)
 
 
+class StageSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    stage_name = serializers.CharField(max_length=150)
+    date = serializers.DateField()
+
+
 class TeamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
@@ -90,6 +96,13 @@ class TeamSerializer(serializers.ModelSerializer):
 
 
 class TraineeTeamSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     user = UserSerializer()
     team = TeamSerializer(required=True)
     role = serializers.CharField(max_length=100, allow_blank=True)
+
+
+class GradeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Grade
+        fields = '__all__'
