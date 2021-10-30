@@ -7,7 +7,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 
-# Create your models here.
+
+#TODO Таблица с критериями оценок
 
 class UserManager(BaseUserManager):
     """
@@ -118,9 +119,9 @@ class Trainee(models.Model):
     course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс")
     speciality = models.CharField(max_length=150, blank=True, verbose_name="Специальность")
     institution = models.CharField(max_length=150, blank=True, verbose_name="Место обучения")
-    team = models.OneToOneField('Team', on_delete=models.CASCADE, blank=True, null=True, verbose_name="Команда")
+    team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
     role = models.CharField(max_length=100, blank=True, verbose_name="Роль")
-    curator = models.ForeignKey('Curator', on_delete=models.CASCADE, blank=True, null=True, verbose_name="Куратор")
+    curator = models.ForeignKey('Curator', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Куратор")
     # image = ...
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")
 
@@ -157,7 +158,7 @@ class Expert(models.Model):
 
 class Team(models.Model):
     team_name = models.CharField(max_length=90, verbose_name="Название команды")
-    curator = models.ForeignKey('Curator', on_delete=models.CASCADE, verbose_name="Куратор")
+    curator = models.ForeignKey('Curator', blank=True, null=True, on_delete=models.SET_NULL, verbose_name="Куратор")
 
     def __str__(self):
         return self.team_name
@@ -194,7 +195,7 @@ class Grade(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Имя оценщика")
     trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE, verbose_name="Имя оцениваемого")
     team = models.ForeignKey('Team', on_delete=models.CASCADE, verbose_name="Команда")
-    stage = models.ForeignKey('Stage', on_delete=models.CASCADE, verbose_name="Этап")
+    stage = models.ForeignKey('Stage', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Этап")
     competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность")
     competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность")
     competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость")

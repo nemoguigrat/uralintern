@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-from .models import User
+from .models import *
 
 
 class LoginSerializer(serializers.Serializer):
@@ -33,9 +33,6 @@ class LoginSerializer(serializers.Serializer):
         # предоставленные почта и пароль соответствуют какому-то пользователю в
         # нашей базе данных. Мы передаем email как username, так как в модели
         # пользователя USERNAME_FIELD = email.
-        print(data)
-        print(email)
-        print(password)
         user = authenticate(username=email, password=password)
         # Если пользователь с данными почтой/паролем не найден, то authenticate
         # вернет None. Возбудить исключение в таком случае.
@@ -60,6 +57,7 @@ class LoginSerializer(serializers.Serializer):
             'token': user.token
         }
 
+
 class UserSerializer(serializers.ModelSerializer):
     """ Ощуществляет сериализацию и десериализацию объектов User. """
 
@@ -83,3 +81,15 @@ class UserSerializer(serializers.ModelSerializer):
         # пароля требуются свойства min_length и max_length,
         # но это не относится к полю токена.
         read_only_fields = ('token',)
+
+
+class TeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ('team_name',)
+
+
+class TraineeTeamSerializer(serializers.Serializer):
+    user = UserSerializer()
+    team = TeamSerializer(required=True)
+    role = serializers.CharField(max_length=100, allow_blank=True)
