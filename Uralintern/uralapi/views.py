@@ -1,7 +1,7 @@
 import jwt
 
 from rest_framework import status
-from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView, ListCreateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView, CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -41,7 +41,7 @@ class UserRetrieveAPIView(RetrieveUpdateAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class StageAPIView(ListAPIView):
+class ListStageAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = StageSerializer
@@ -52,7 +52,7 @@ class StageAPIView(ListAPIView):
         return Response({'stages' : serializer.data})
 
 
-class TeamMembersAPIView(ListAPIView):
+class ListTeamMembersAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = TraineeTeamSerializer
@@ -79,7 +79,7 @@ class TeamMembersAPIView(ListAPIView):
         return Response({"trainee": current_trainee.pk, "team": data})
 
 
-class CreateGradeAPIView(ListCreateAPIView):
+class ListGradeAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = GradeSerializer
@@ -87,10 +87,29 @@ class CreateGradeAPIView(ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         user_token = request.headers.get('Authorization', None).split()[1]
         user_id = jwt.decode(user_token, settings.SECRET_KEY, algorithms='HS256')['id']
-
-        grades = Grade.objects.filter(user=user_id)
+        current_trainee = Trainee.objects.get(user__pk=user_id)
+        grades = Grade.objects.filter(trainee=current_trainee)
         serializer = self.serializer_class(grades, many=True)
         return Response({"grades": serializer.data})
 
+class UpdateCreateGradeAPIView(CreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer,)
+    serializer_class = GradeSerializer
+
     def post(self, request, *args, **kwargs):
-        pass
+        grade_note = request.data.get('grades', {})[0]
+
+        instance_grade = Grade.objects\
+            .filter(user=grade_note['user'], trainee=grade_note['trainee'], stage=grade_note['stage'])\
+            .first()
+        serializer = self.serializer_class(instance_grade, data=grade_note) if instance_grade else \
+            self.serializer_class(data=grade_note)
+
+        serializer.is_valid()
+        serializer.save()
+        return Response(status=status.HTTP_200_OK)
+
+
+
+

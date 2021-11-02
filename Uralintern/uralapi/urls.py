@@ -1,10 +1,13 @@
 from django.urls import path
-from .views import LoginAPIView, UserRetrieveAPIView, TeamMembersAPIView, CreateGradeAPIView, StageAPIView
+from .views import (
+    LoginAPIView, UserRetrieveAPIView, ListTeamMembersAPIView, ListGradeAPIView, ListStageAPIView, UpdateCreateGradeAPIView
+)
 
 urlpatterns = [
-    path('stage', StageAPIView.as_view()),
-    path('grade', CreateGradeAPIView.as_view()),
-    path('user/team', TeamMembersAPIView.as_view()),
+    path('stage', ListStageAPIView.as_view()),
+    path('grade/get', ListGradeAPIView.as_view()),
+    path('grade/create-update', UpdateCreateGradeAPIView.as_view()),
+    path('user/team', ListTeamMembersAPIView.as_view()),
     path('user', UserRetrieveAPIView.as_view()),
     path('users/login', LoginAPIView.as_view()),
 ]

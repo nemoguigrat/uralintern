@@ -103,6 +103,24 @@ class TraineeTeamSerializer(serializers.Serializer):
 
 
 class GradeSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        return Grade.objects.create(**validated_data)
+
+    def update(self, instance : Grade, validated_data):
+        instance.competence1 = validated_data.get('competence1', instance.competence1)
+        instance.competence2 = validated_data.get('competence2', instance.competence2)
+        instance.competence3 = validated_data.get('competence3', instance.competence3)
+        instance.competence4 = validated_data.get('competence4', instance.competence4)
+        instance.save()
+        return instance
+
     class Meta:
         model = Grade
-        fields = '__all__'
+        fields = ('user',
+                  'trainee',
+                  'team',
+                  'stage',
+                  'competence1',
+                  'competence2',
+                  'competence3',
+                  'competence4',)

@@ -200,11 +200,12 @@ class Grade(models.Model):
     competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность")
     competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость")
     competence4 = models.SmallIntegerField(blank=True, null=True, verbose_name="Командность")
-    date = models.DateTimeField(auto_created=True)
+    date = models.DateTimeField(auto_created=True, auto_now_add=True)
 
     class Meta:
         verbose_name = "Оценка"
         verbose_name_plural = "Оценки"
+        unique_together = ("user", "trainee", "stage")
 
 # TODO временное решение для хранения пароля, заменить
 class LoginData(models.Model):
