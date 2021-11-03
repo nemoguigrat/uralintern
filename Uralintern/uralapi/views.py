@@ -1,16 +1,17 @@
 import jwt
 
 from rest_framework import status
-from rest_framework.generics import RetrieveAPIView, ListAPIView, CreateAPIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView, CreateAPIView, UpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.renderers import JSONRenderer
-from rest_framework.parsers import MultiPartParser,FileUploadParser, FormParser
+from rest_framework.parsers import MultiPartParser, FileUploadParser, FormParser
 from .models import *
 from .renderers import UserJSONRenderer
 from .serializers import (
-    LoginSerializer, UserSerializer, TraineeTeamSerializer, GradeSerializer, StageSerializer, TraineeSerializer
+    LoginSerializer, UserSerializer, TraineeTeamSerializer, GradeSerializer, StageSerializer, TraineeSerializer,
+    TraineeImageSerializer
 )
 
 
@@ -40,6 +41,7 @@ class UserRetrieveAPIView(RetrieveAPIView):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class TraineeRetriveAPIView(RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
@@ -51,7 +53,24 @@ class TraineeRetriveAPIView(RetrieveAPIView):
 
         trainee = Trainee.objects.get(user__pk=user_id)
         serializer = self.serializer_class(trainee)
-        return Response({"trainee" : serializer.data}, status=status.HTTP_200_OK)
+        return Response({"trainee": serializer.data}, status=status.HTTP_200_OK)
+
+class TraineeImageUploadAPIView(UpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer,)
+    serializer_class = TraineeImageSerializer
+    parser_classes = (MultiPartParser, FormParser, FileUploadParser)
+
+    def patch(self, request, *args, **kwargs):
+        print(request.data)
+        user_token = request.headers.get('Authorization', None).split()[1]
+        user_id = jwt.decode(user_token, settings.SECRET_KEY, algorithms='HS256')['id']
+
+        trainee = Trainee.objects.get(user__pk=user_id)
+        serializer = self.serializer_class(trainee, data={'image' : request.data.get('image', None)})
+        serializer.is_valid()
+        serializer.save()
+        return Response(status=status.HTTP_200_OK)
 
 
 class ListStageAPIView(ListAPIView):
@@ -62,7 +81,7 @@ class ListStageAPIView(ListAPIView):
     def get(self, request, *args, **kwargs):
         stages = Stage.objects.all()
         serializer = self.serializer_class(stages, many=True)
-        return Response({'stages' : serializer.data})
+        return Response({'stages': serializer.data}, status=status.HTTP_200_OK)
 
 
 class ListTeamMembersAPIView(ListAPIView):
@@ -92,10 +111,10 @@ class ListTeamMembersAPIView(ListAPIView):
             trainee_dict['image'] = trainee['image']
             data.append(trainee_dict)
         return Response({"trainee":
-                             {"id" : current_trainee.pk,
-                              "username" : current_trainee.user.username,
-                              "image" : current_trainee.image.url if current_trainee.image else None},
-                         "team": data})
+                             {"id": current_trainee.pk,
+                              "username": current_trainee.user.username,
+                              "image": current_trainee.image.url if current_trainee.image else None},
+                         "team": data}, status=status.HTTP_200_OK)
 
 
 class ListGradeAPIView(ListAPIView):
@@ -109,7 +128,8 @@ class ListGradeAPIView(ListAPIView):
         current_trainee = Trainee.objects.get(user__pk=user_id)
         grades = Grade.objects.filter(trainee=current_trainee)
         serializer = self.serializer_class(grades, many=True)
-        return Response({"grades": serializer.data})
+        return Response({"grades": serializer.data}, status=status.HTTP_200_OK)
+
 
 class UpdateCreateGradeAPIView(CreateAPIView):
     permission_classes = (IsAuthenticated,)
@@ -119,8 +139,8 @@ class UpdateCreateGradeAPIView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         grade_note = request.data.get('grades', {})[0]
 
-        instance_grade = Grade.objects\
-            .filter(user=grade_note['user'], trainee=grade_note['trainee'], stage=grade_note['stage'])\
+        instance_grade = Grade.objects \
+            .filter(user=grade_note['user'], trainee=grade_note['trainee'], stage=grade_note['stage']) \
             .first()
         serializer = self.serializer_class(instance_grade, data=grade_note) if instance_grade else \
             self.serializer_class(data=grade_note)
@@ -128,7 +148,3 @@ class UpdateCreateGradeAPIView(CreateAPIView):
         serializer.is_valid()
         serializer.save()
         return Response(status=status.HTTP_200_OK)
-
-
-
-

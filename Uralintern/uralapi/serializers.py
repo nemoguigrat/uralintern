@@ -99,6 +99,14 @@ class TraineeSerializer(serializers.ModelSerializer):
         model = Trainee
         fields = "__all__"
 
+class TraineeImageSerializer(serializers.Serializer):
+    image = serializers.ImageField(use_url=True)
+
+    def update(self, instance : Trainee, validated_data):
+        instance.image = validated_data.get('image', instance.image)
+        instance.save()
+        return instance
+
 
 class TraineeTeamSerializer(serializers.Serializer):
     id = serializers.IntegerField()
