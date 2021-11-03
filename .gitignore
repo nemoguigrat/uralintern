@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 pyvenv.cfg
+Uralintern/media/images
 build/
 develop-eggs/
 dist/

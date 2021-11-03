@@ -7,6 +7,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 
+def upload_to(instance, filename):
+    return f'images/{filename}'
 
 #TODO Таблица с критериями оценок
 
@@ -122,7 +124,7 @@ class Trainee(models.Model):
     team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
     role = models.CharField(max_length=100, blank=True, verbose_name="Роль")
     curator = models.ForeignKey('Curator', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Куратор")
-    # image = ...
+    image = models.ImageField(upload_to=upload_to, blank=True, null=True)
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")
 
     def __str__(self):

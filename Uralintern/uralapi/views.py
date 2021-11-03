@@ -1,16 +1,16 @@
 import jwt
 
 from rest_framework import status
-from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView, CreateAPIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView, CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.renderers import JSONRenderer
-
+from rest_framework.parsers import MultiPartParser,FileUploadParser, FormParser
 from .models import *
 from .renderers import UserJSONRenderer
 from .serializers import (
-    LoginSerializer, UserSerializer, TraineeTeamSerializer, GradeSerializer, StageSerializer
+    LoginSerializer, UserSerializer, TraineeTeamSerializer, GradeSerializer, StageSerializer, TraineeSerializer
 )
 
 
@@ -30,7 +30,7 @@ class LoginAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class UserRetrieveAPIView(RetrieveUpdateAPIView):
+class UserRetrieveAPIView(RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (UserJSONRenderer,)
     serializer_class = UserSerializer
@@ -39,6 +39,19 @@ class UserRetrieveAPIView(RetrieveUpdateAPIView):
         serializer = self.serializer_class(request.user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class TraineeRetriveAPIView(RetrieveAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer,)
+    serializer_class = TraineeSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        user_token = request.headers.get('Authorization', None).split()[1]
+        user_id = jwt.decode(user_token, settings.SECRET_KEY, algorithms='HS256')['id']
+
+        trainee = Trainee.objects.get(user__pk=user_id)
+        serializer = self.serializer_class(trainee)
+        return Response({"trainee" : serializer.data}, status=status.HTTP_200_OK)
 
 
 class ListStageAPIView(ListAPIView):
@@ -56,6 +69,7 @@ class ListTeamMembersAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = TraineeTeamSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, *args, **kwargs):
         user_token = request.headers.get('Authorization', None).split()[1]
@@ -63,20 +77,25 @@ class ListTeamMembersAPIView(ListAPIView):
 
         current_trainee = Trainee.objects.get(user__pk=user_id)
         trainee_team = current_trainee.team
-        trainee_team_members = Trainee.objects.filter(team=trainee_team).exclude(user__pk=user_id)
+        trainee_team_members = Trainee.objects.filter(team=trainee_team).exclude(pk=current_trainee.pk)
 
         serializer = self.serializer_class(trainee_team_members, many=True)
 
         data = []
         for trainee in serializer.data:
+            print(trainee)
             trainee_dict = {}
             trainee_dict['id'] = trainee['id']
             trainee_dict['username'] = trainee['user']['username']
             trainee_dict['team'] = trainee['team']['team_name']
             trainee_dict['role'] = trainee['role']
+            trainee_dict['image'] = trainee['image']
             data.append(trainee_dict)
-
-        return Response({"trainee": current_trainee.pk, "team": data})
+        return Response({"trainee":
+                             {"id" : current_trainee.pk,
+                              "username" : current_trainee.user.username,
+                              "image" : current_trainee.image.url if current_trainee.image else None},
+                         "team": data})
 
 
 class ListGradeAPIView(ListAPIView):

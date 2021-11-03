@@ -56,7 +56,7 @@ class UserAdmin(BaseUserAdmin):
 @admin.register(Trainee)
 class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     change_list_template = "admin/uralapi/trainee_changelist.html"
-    list_display = ('user', 'internship', 'speciality', 'team', 'role', 'curator', 'date_start')
+    list_display = ('user', 'image', 'internship', 'speciality', 'team', 'role', 'curator', 'date_start')
 
     def get_urls(self):
         urls = super().get_urls()

@@ -94,12 +94,18 @@ class TeamSerializer(serializers.ModelSerializer):
         model = Team
         fields = ('team_name',)
 
+class TraineeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Trainee
+        fields = "__all__"
+
 
 class TraineeTeamSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     user = UserSerializer()
     team = TeamSerializer(required=True)
     role = serializers.CharField(max_length=100, allow_blank=True)
+    image = serializers.ImageField(use_url=True)
 
 
 class GradeSerializer(serializers.ModelSerializer):
