@@ -99,6 +99,7 @@ class TraineeSerializer(serializers.ModelSerializer):
         model = Trainee
         fields = "__all__"
 
+#TODO валидировать наличие изображения
 class TraineeImageSerializer(serializers.Serializer):
     image = serializers.ImageField(use_url=True)
 
@@ -138,3 +139,8 @@ class GradeSerializer(serializers.ModelSerializer):
                   'competence2',
                   'competence3',
                   'competence4',)
+
+class GradeDescriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GradeDescription
+        fields = "__all__"

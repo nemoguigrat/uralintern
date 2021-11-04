@@ -152,3 +152,7 @@ class GradeAdmin(admin.ModelAdmin):
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('event_name', 'date',)
+
+@admin.register(GradeDescription)
+class GradeDescriptionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')

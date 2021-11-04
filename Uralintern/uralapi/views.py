@@ -9,10 +9,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import MultiPartParser, FileUploadParser, FormParser
 from .models import *
 from .renderers import UserJSONRenderer
-from .serializers import (
-    LoginSerializer, UserSerializer, TraineeTeamSerializer, GradeSerializer, StageSerializer, TraineeSerializer,
-    TraineeImageSerializer
-)
+from .serializers import *
 
 
 # Create your views here.
@@ -55,6 +52,7 @@ class TraineeRetrieveAPIView(RetrieveAPIView):
         serializer = self.serializer_class(trainee)
         return Response({"trainee": serializer.data}, status=status.HTTP_200_OK)
 
+#TODO возможно придется переписать, так как кураторы и эксперты пока так же могут войти в приложение
 class TraineeImageUploadAPIView(UpdateAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
@@ -67,7 +65,9 @@ class TraineeImageUploadAPIView(UpdateAPIView):
         user_id = jwt.decode(user_token, settings.SECRET_KEY, algorithms='HS256')['id']
 
         trainee = Trainee.objects.get(user__pk=user_id)
-        serializer = self.serializer_class(trainee, data={'image' : request.data.get('image', None)})
+        if trainee.image:
+            os.remove(settings.MEDIA_ROOT + "/" + trainee.image.name)
+        serializer = self.serializer_class(trainee, data={'image': request.data.get('image', None)})
         serializer.is_valid()
         serializer.save()
         return Response(status=status.HTTP_200_OK)
@@ -137,14 +137,75 @@ class UpdateCreateGradeAPIView(CreateAPIView):
     serializer_class = GradeSerializer
 
     def post(self, request, *args, **kwargs):
-        grade_note = request.data.get('grades', {})[0]
+        grade_note = request.data.get('grades', {})
 
-        instance_grade = Grade.objects \
-            .filter(user=grade_note['user'], trainee=grade_note['trainee'], stage=grade_note['stage']) \
-            .first()
-        serializer = self.serializer_class(instance_grade, data=grade_note) if instance_grade else \
-            self.serializer_class(data=grade_note)
+        for grade in grade_note:
+            instance_grade = Grade.objects \
+                .filter(user=grade['user'], trainee=grade['trainee'], stage=grade['stage']) \
+                .first()
+            serializer = self.serializer_class(instance_grade, data=grade) if instance_grade else \
+                self.serializer_class(data=grade)
 
-        serializer.is_valid()
-        serializer.save()
+            serializer.is_valid()
+            serializer.save()
         return Response(status=status.HTTP_200_OK)
+
+
+class ReportAPIView(RetrieveAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer,)
+
+    def retrieve(self, request, *args, **kwargs):
+        user_token = request.headers.get('Authorization', None).split()[1]
+        user_id = jwt.decode(user_token, settings.SECRET_KEY, algorithms='HS256')['id']
+
+        trainee = Trainee.objects.get(user__pk=user_id)
+        grades_query = Grade.objects.select_related('user').filter(trainee=trainee)
+        cash = list(grades_query)
+
+        self_rating_query = grades_query.filter(user=user_id)
+        team_rating_query = grades_query.filter(team=trainee.team)
+        curator_rating_query = grades_query.filter(user__system_role = "CURATOR")
+        expert_rating_query = grades_query.filter(user__system_role = "EXPERT")
+
+        general_rating = self._get_rating(cash)
+        self_rating = self._get_rating(self_rating_query)
+        team_rating = self._get_rating(team_rating_query)
+        curator_rating = self._get_rating(curator_rating_query)
+        expert_rating = self._get_rating(expert_rating_query)
+
+        return Response({
+            "general" : general_rating,
+            "self" : self_rating,
+            "team" : team_rating,
+            "curator" : curator_rating,
+            "expert" : expert_rating
+        }, status=status.HTTP_200_OK)
+
+    def _get_rating(self, grades):
+        rating_list = [[],[],[],[]]
+        for grade in grades:
+            rating_list[0].append(grade.competence1 if grade.competence1 != None else 0)
+            rating_list[1].append(grade.competence2 if grade.competence2 != None else 0)
+            rating_list[2].append(grade.competence3 if grade.competence3 != None else 0)
+            rating_list[3].append(grade.competence4 if grade.competence4 != None else 0)
+        return {"competence1" :self.__average(rating_list[0]),
+                "competence2": self.__average(rating_list[1]),
+                "competence3": self.__average(rating_list[2]),
+                "competence4": self.__average(rating_list[3])}
+
+    def __average(self, grades : list):
+        return (sum(grades) / len(grades)) if len(grades) > 0 else 0
+
+
+
+
+class GradeDescriptionAPIView(ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer,)
+    serializer_class = GradeDescriptionSerializer
+
+    def get(self, request, *args, **kwargs):
+        descriptions = GradeDescription.objects.all()
+        serializer = self.serializer_class(descriptions, many=True)
+        return Response({"descriptions": serializer.data}, status=status.HTTP_200_OK)

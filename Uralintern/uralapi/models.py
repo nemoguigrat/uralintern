@@ -1,3 +1,5 @@
+import os
+
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
@@ -109,7 +111,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         Генерирует веб-токен JSON, в котором хранится идентификатор этого
         пользователя, срок действия токена составляет 1 день от создания
         """
-        dt = datetime.now() + timedelta(days=1)
+        dt = datetime.now() + timedelta(days=30)
 
         token = jwt.encode({
             'id': self.pk,
@@ -207,7 +209,7 @@ class Grade(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Имя оценщика")
     trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE, verbose_name="Имя оцениваемого")
     team = models.ForeignKey('Team', on_delete=models.CASCADE, verbose_name="Команда")
-    stage = models.ForeignKey('Stage', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Этап")
+    stage = models.ForeignKey('Stage', on_delete=models.CASCADE, verbose_name="Этап")
     competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность")
     competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность")
     competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость")
@@ -236,3 +238,9 @@ def create_profiles(sender, instance: User, created, **kwargs):
             Curator.objects.create(user=instance)
         elif instance.system_role == "TRAINEE":
             Trainee.objects.create(user=instance, date_start=datetime.now())
+
+#TODO не самый лучший варинт, возможно стоит переписать
+@receiver(pre_delete, sender=Trainee)
+def delete_image(sender, instance: Trainee, **kwargs):
+    if instance.image:
+        os.remove(settings.MEDIA_ROOT + "/" + instance.image.name)
