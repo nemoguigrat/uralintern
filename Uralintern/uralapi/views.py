@@ -22,7 +22,7 @@ class LoginAPIView(APIView):
     renderer_classes = (UserJSONRenderer,)
     serializer_class = LoginSerializer
 
-    def post(self, request):
+    def get(self, request):
         user = request.data.get('user', {})
 
         serializer = self.serializer_class(data=user)
@@ -42,7 +42,7 @@ class UserRetrieveAPIView(RetrieveAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class TraineeRetriveAPIView(RetrieveAPIView):
+class TraineeRetrieveAPIView(RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = TraineeSerializer

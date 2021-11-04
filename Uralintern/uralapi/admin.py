@@ -49,7 +49,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('email', 'username', 'system_role', 'password1', 'password2'),
         }),
     )
-    list_display = ('username', 'email', 'system_role', 'is_staff',)
+    list_display = ('username', 'email', 'system_role', 'is_staff', 'unhashed_password')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups')
 
 
@@ -66,9 +66,6 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
         return my_urls + urls
 
     # TODO Отловить ошибки при создании объектов
-    # TODO Сохранять пароль для дальнейшей рассылки: возможный вариант решения: кэшировать данные(имя, почту пароль)
-    # без сохранения в базу и потом делать рассылку на почту
-
     def import_csv(self, request):
         if request.method == "POST":
             csv_file = str(request.FILES["csv_file"].read().decode('utf-8-sig')).split('\r\n')
@@ -85,9 +82,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             request, "admin/uralapi/csv_form.html", payload
         )
 
-    # TODO решить вопрос с сохранением ссылок на куратора и команду
     def _create_trainee_user(self, all_data):
-        auth_data = []
         local_users = []
         local_trainees = []
         user_create = 0
@@ -104,26 +99,28 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             print(f"Созданно {user_create} из {user_count}")
 
             local_users.append(user)
-            auth_data.append(LoginData(name=data["ФИО"], email=data["e-mail"], password=random_password))
 
         with transaction.atomic():
             users = User.objects.bulk_create(local_users)
         user_to_create = len(users)
         users = User.objects.order_by("-pk")[:user_to_create]
+        teams = Team.objects.select_related('curator')
+        cash = list(teams)
         for user, data in zip(users, all_data):
+            team = teams.filter(team_name=data["Команда"]).first()
+            curator = team.curator if team != None else None
             trainee = Trainee(user=user,
                               internship=data["Направление стажировки"],
                               course=int(data["Курс"]),
                               speciality=data["Учебная специальность"],
                               institution=data["Учебное заведение"],
                               role=data["Роль"],
+                              team=team,
+                              curator=curator,
                               date_start="-".join(list(data["дата старта"].split(".")[::-1])))
-            # team = data["Команда"]
-            # curator =data["Куратор"]
             local_trainees.append(trainee)
         with transaction.atomic():
             Trainee.objects.bulk_create(local_trainees)
-        LoginData.objects.bulk_create(auth_data)
 
     # TODO изменить алгоритм создания пароля, сохранять и где то сохранять пароли для дальшей рассылки
     def generate_password(self):
@@ -144,7 +141,7 @@ class StageAdmin(admin.ModelAdmin):
 
 @admin.register(Curator)
 class CuratorAdmin(admin.ModelAdmin):
-    list_display = ('user',)
+    list_display = ('user', 'vk_url')
 
 
 @admin.register(Grade)
@@ -155,8 +152,3 @@ class GradeAdmin(admin.ModelAdmin):
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('event_name', 'date',)
-
-
-@admin.register(LoginData)
-class DataAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'password')

@@ -1,16 +1,18 @@
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
 
 def upload_to(instance, filename):
     return f'images/{filename}'
 
-#TODO Таблица с критериями оценок
+
+# TODO Таблица с критериями оценок
 
 class UserManager(BaseUserManager):
     """
@@ -51,6 +53,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(db_index=True, max_length=255, verbose_name="ФИО")  # username - ФИО
     email = models.EmailField(db_index=True, unique=True, verbose_name="Почта")
+    unhashed_password = models.CharField(max_length=150, verbose_name="Некэшированный пароль", blank=True, null=True)
     is_active = models.BooleanField(default=True, verbose_name="Активный пользователь")
     is_staff = models.BooleanField(default=False)
     ROLES = (
@@ -74,6 +77,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         """ Строковое представление модели (отображается в консоли) """
         return self.username
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+        self.unhashed_password = raw_password
+        self._password = raw_password
 
     @property
     def token(self):
@@ -159,7 +167,7 @@ class Expert(models.Model):
 
 
 class Team(models.Model):
-    team_name = models.CharField(max_length=90, verbose_name="Название команды")
+    team_name = models.CharField(max_length=90, verbose_name="Название команды", unique=True)
     curator = models.ForeignKey('Curator', blank=True, null=True, on_delete=models.SET_NULL, verbose_name="Куратор")
 
     def __str__(self):
@@ -171,7 +179,7 @@ class Team(models.Model):
 
 
 class Stage(models.Model):
-    stage_name = models.CharField(max_length=150, verbose_name="Этап")
+    stage_name = models.CharField(max_length=150, verbose_name="Этап", unique=True)
     event = models.ForeignKey('Event', on_delete=models.CASCADE, verbose_name="Мероприятие")
     date = models.DateField()
 
@@ -182,8 +190,9 @@ class Stage(models.Model):
         verbose_name = "Этап"
         verbose_name_plural = "Этапы"
 
+
 class Event(models.Model):
-    event_name = models.CharField(max_length=150, verbose_name="Название мероприятия")
+    event_name = models.CharField(max_length=150, verbose_name="Название мероприятия", unique=True)
     date = models.DateField()
 
     def __str__(self):
@@ -192,6 +201,7 @@ class Event(models.Model):
     class Meta:
         verbose_name = "Мероприятие"
         verbose_name_plural = "Мероприятия"
+
 
 class Grade(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Имя оценщика")
@@ -209,18 +219,18 @@ class Grade(models.Model):
         verbose_name_plural = "Оценки"
         unique_together = ("user", "trainee", "stage")
 
-# TODO временное решение для хранения пароля, заменить
-class LoginData(models.Model):
-    name = models.CharField(max_length=100)
-    password = models.CharField(max_length=20)
-    email = models.EmailField(max_length=100)
+
+class GradeDescription(models.Model):
+    name = models.CharField(max_length=150, verbose_name="Название")
+    description = models.TextField(blank=True, verbose_name="Описание")
 
     class Meta:
-        verbose_name = "Данные"
-        verbose_name_plural = "Данные"
+        verbose_name = "Описание"
+        verbose_name_plural = "Описания оценки"
+
 
 @receiver(post_save, sender=User)
-def create_profiles(sender, instance : User, created, **kwargs):
+def create_profiles(sender, instance: User, created, **kwargs):
     if created:
         if instance.system_role == "CURATOR":
             Curator.objects.create(user=instance)
