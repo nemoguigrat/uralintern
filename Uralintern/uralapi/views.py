@@ -198,8 +198,6 @@ class ReportAPIView(RetrieveAPIView):
         return (sum(grades) / len(grades)) if len(grades) > 0 else 0
 
 
-
-
 class GradeDescriptionAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
