@@ -31,7 +31,7 @@ class LoginAPIView(APIView):
 class UserRetrieveAPIView(RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (UserJSONRenderer,)
-    serializer_class = UserSerializer
+    serializer_class = UserTokenSerializer
 
     def retrieve(self, request, *args, **kwargs):
         serializer = self.serializer_class(request.user)
@@ -94,15 +94,14 @@ class ListTeamMembersAPIView(ListAPIView):
         user_token = request.headers.get('Authorization', None).split()[1]
         user_id = jwt.decode(user_token, settings.SECRET_KEY, algorithms='HS256')['id']
 
-        current_trainee = Trainee.objects.get(user__pk=user_id)
+        current_trainee = Trainee.objects.select_related('user').get(user__pk=user_id)
         trainee_team = current_trainee.team
-        trainee_team_members = Trainee.objects.filter(team=trainee_team).exclude(pk=current_trainee.pk)
+        trainee_team_members = Trainee.objects.filter(team=trainee_team).select_related('user').exclude(pk=current_trainee.pk)
 
         serializer = self.serializer_class(trainee_team_members, many=True)
 
         data = []
         for trainee in serializer.data:
-            print(trainee)
             trainee_dict = {}
             trainee_dict['id'] = trainee['id']
             trainee_dict['username'] = trainee['user']['username']

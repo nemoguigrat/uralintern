@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-u1cqwl1-afb2f9nd2w7&^q^p*0h1&_l8ctyw$o9y6!)2$^#xb(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['sharosuc.beget.tech', '127.0.0.1']
 
 
 # Application definition
@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'uralapi.apps.UralapiConfig'
+    'uralapi.apps.UralapiConfig',
 ]
 
 MIDDLEWARE = [
@@ -57,7 +57,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'querycount.middleware.QueryCountMiddleware'
 ]
+
 
 ROOT_URLCONF = 'Uralintern.urls'
 
@@ -145,3 +147,17 @@ MEDIA_URL = '/media/'
 
 # Путь хранения картинок
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+QUERYCOUNT = {
+    'THRESHOLDS': {
+        'MEDIUM': 50,
+        'HIGH': 200,
+        'MIN_TIME_TO_LOG':0,
+        'MIN_QUERY_COUNT_TO_LOG':0
+    },
+    'IGNORE_REQUEST_PATTERNS': [r'^/admin/'],
+    'IGNORE_SQL_PATTERNS': [],
+    'DISPLAY_DUPLICATES': 5,
+    'RESPONSE_HEADER': 'X-DjangoQueryCount-Count'
+}

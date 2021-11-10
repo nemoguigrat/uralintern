@@ -12,6 +12,7 @@ from django.db import transaction
 from .models import *
 
 
+#TODO зарегистрировать таблицу экспертов
 class ExportCsvMixin:
     def export_as_csv(self, request, queryset):
         meta = self.model._meta
@@ -39,7 +40,7 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'email', 'system_role', 'password')}),
         (('Permissions'), {
-            'fields': ('is_active', 'is_superuser'),
+            'fields': ('is_active', 'is_superuser', 'is_staff'),
         }),
         (('Important dates'), {'fields': ('last_login',)}),
     )

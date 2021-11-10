@@ -52,13 +52,14 @@ class LoginSerializer(serializers.Serializer):
         # Метод validate должен возвращать словать проверенных данных. Это
         # данные, которые передются в т.ч. в методы create и update.
         return {
+            'id': user.pk,
             'email': user.email,
             'username': user.username,
             'token': user.token
         }
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserTokenSerializer(serializers.ModelSerializer):
     """ Ощуществляет сериализацию и десериализацию объектов User. """
 
     # Пароль должен содержать от 8 до 128 символов. Это стандартное правило. Мы
@@ -72,7 +73,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'password', 'token',)
+        fields = ('id', 'email', 'username', 'password', 'token',)
 
         # Параметр read_only_fields является альтернативой явному указанию поля
         # с помощью read_only = True, как мы это делали для пароля выше.
@@ -83,27 +84,48 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('token',)
 
 
+class UserNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username')
+
+
 class StageSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     stage_name = serializers.CharField(max_length=150)
     date = serializers.DateField()
 
 
+class CuratorSerializer(serializers.Serializer):
+    user = UserNameSerializer()
+
+    class Meta:
+        model = Curator
+        fields = "__all__"
+
+
 class TeamSerializer(serializers.ModelSerializer):
+    curator = CuratorSerializer()
+
     class Meta:
         model = Team
-        fields = ('team_name',)
+        fields = ('team_name', 'curator')
+
 
 class TraineeSerializer(serializers.ModelSerializer):
+    user = UserNameSerializer()
+    team = TeamSerializer()
+
     class Meta:
         model = Trainee
         fields = "__all__"
 
-#TODO валидировать наличие изображения
+
+# TODO валидировать наличие изображения
 class TraineeImageSerializer(serializers.Serializer):
     image = serializers.ImageField(use_url=True)
 
-    def update(self, instance : Trainee, validated_data):
+    def update(self, instance: Trainee, validated_data):
         instance.image = validated_data.get('image', instance.image)
         instance.save()
         return instance
@@ -111,7 +133,7 @@ class TraineeImageSerializer(serializers.Serializer):
 
 class TraineeTeamSerializer(serializers.Serializer):
     id = serializers.IntegerField()
-    user = UserSerializer()
+    user = UserNameSerializer()
     team = TeamSerializer(required=True)
     role = serializers.CharField(max_length=100, allow_blank=True)
     image = serializers.ImageField(use_url=True)
@@ -121,7 +143,7 @@ class GradeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return Grade.objects.create(**validated_data)
 
-    def update(self, instance : Grade, validated_data):
+    def update(self, instance: Grade, validated_data):
         instance.competence1 = validated_data.get('competence1', instance.competence1)
         instance.competence2 = validated_data.get('competence2', instance.competence2)
         instance.competence3 = validated_data.get('competence3', instance.competence3)
@@ -139,6 +161,7 @@ class GradeSerializer(serializers.ModelSerializer):
                   'competence2',
                   'competence3',
                   'competence4',)
+
 
 class GradeDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
