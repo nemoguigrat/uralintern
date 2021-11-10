@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
@@ -59,6 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True, verbose_name="Активный пользователь")
     is_staff = models.BooleanField(default=False)
     ROLES = (
+        ('ADMIN', 'Администратор'),
         ('CURATOR', 'Куратор'),
         ('EXPERT', 'Эксперт'),
         ('TRAINEE', 'Стажер')
@@ -80,6 +82,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         """ Строковое представление модели (отображается в консоли) """
         return self.username
 
+    def save(self, *args, **kwargs):
+        if self.system_role == 'ADMIN':
+            self.is_staff = True
+            self.is_superuser = True
+        super(User, self).save(*args, **kwargs)
+
+
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
         self.unhashed_password = raw_password
@@ -87,30 +96,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def token(self):
-        """
-        Позволяет получить токен пользователя путем вызова user.token, вместо
-        user._generate_jwt_token(). Декоратор @property выше делает это
-        возможным. token называется "динамическим свойством".
-        """
         return self._generate_jwt_token()
 
     def get_full_name(self):
-        """
-        Этот метод требуется Django для таких вещей, как обработка электронной
-        почты. Обычно это имя фамилия пользователя, но поскольку мы не
-        используем их, будем возвращать username.
-        """
         return self.username
 
     def get_short_name(self):
-        """ Аналогично методу get_full_name(). """
         return self.username
 
     def _generate_jwt_token(self):
-        """
-        Генерирует веб-токен JSON, в котором хранится идентификатор этого
-        пользователя, срок действия токена составляет 1 день от создания
-        """
         dt = datetime.now() + timedelta(days=30)
 
         token = jwt.encode({
@@ -128,12 +122,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Trainee(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="ФИО")
     internship = models.CharField(max_length=150, blank=True, verbose_name="Напр. стажировки")
-    course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс")
+    course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс", validators=[MinValueValidator(1), MaxValueValidator(6)])
     speciality = models.CharField(max_length=150, blank=True, verbose_name="Специальность")
     institution = models.CharField(max_length=150, blank=True, verbose_name="Место обучения")
     team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
     role = models.CharField(max_length=100, blank=True, verbose_name="Роль")
-    curator = models.ForeignKey('Curator', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Куратор")
     image = models.ImageField(upload_to=upload_to, blank=True, null=True)
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")
 
@@ -210,10 +203,10 @@ class Grade(models.Model):
     trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE, verbose_name="Имя оцениваемого")
     team = models.ForeignKey('Team', on_delete=models.CASCADE, verbose_name="Команда")
     stage = models.ForeignKey('Stage', on_delete=models.CASCADE, verbose_name="Этап")
-    competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность")
-    competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность")
-    competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость")
-    competence4 = models.SmallIntegerField(blank=True, null=True, verbose_name="Командность")
+    competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность", validators=[MinValueValidator(-1), MaxValueValidator(2)])
+    competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность", validators=[MinValueValidator(-1), MaxValueValidator(2)])
+    competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость", validators=[MinValueValidator(-1), MaxValueValidator(2)])
+    competence4 = models.SmallIntegerField(blank=True, null=True, verbose_name="Командность", validators=[MinValueValidator(-1), MaxValueValidator(2)])
     date = models.DateTimeField(auto_created=True, auto_now_add=True)
 
     class Meta:
@@ -234,9 +227,10 @@ class GradeDescription(models.Model):
 @receiver(post_save, sender=User)
 def create_profiles(sender, instance: User, created, **kwargs):
     if created:
-        if instance.system_role == "CURATOR":
+        role = instance.system_role
+        if role == "CURATOR":
             Curator.objects.create(user=instance)
-        elif instance.system_role == "TRAINEE":
+        elif role == "TRAINEE":
             Trainee.objects.create(user=instance, date_start=datetime.now())
 
 #TODO не самый лучший варинт, возможно стоит переписать

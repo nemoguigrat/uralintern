@@ -3,7 +3,7 @@ import random
 import string
 
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, Group
 from django.forms import forms
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -11,6 +11,7 @@ from django.urls import path
 from django.db import transaction
 from .models import *
 
+admin.site.unregister(Group)
 
 #TODO зарегистрировать таблицу экспертов
 class ExportCsvMixin:
@@ -42,7 +43,6 @@ class UserAdmin(BaseUserAdmin):
         (('Permissions'), {
             'fields': ('is_active', 'is_superuser', 'is_staff'),
         }),
-        (('Important dates'), {'fields': ('last_login',)}),
     )
     add_fieldsets = (
         (None, {
@@ -51,13 +51,15 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
     list_display = ('username', 'email', 'system_role', 'is_staff', 'unhashed_password')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups')
+    list_filter = ('is_staff', 'is_superuser', 'is_active',)
+    search_fields = ('username',)
 
 
 @admin.register(Trainee)
 class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     change_list_template = "admin/uralapi/trainee_changelist.html"
-    list_display = ('user', 'image', 'internship', 'speciality', 'team', 'role', 'curator', 'date_start')
+    list_display = ('user', 'image', 'course', 'internship', 'speciality', 'team', 'role', 'date_start')
+    search_fields = ('user__username', 'course', 'internship', 'speciality', 'team__team_name', 'role',)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -65,6 +67,9 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             path('import-csv/', self.import_csv),
         ]
         return my_urls + urls
+
+    def has_add_permission(self, request):
+        return False
 
     # TODO Отловить ошибки при создании объектов
     def import_csv(self, request):
@@ -143,6 +148,16 @@ class StageAdmin(admin.ModelAdmin):
 @admin.register(Curator)
 class CuratorAdmin(admin.ModelAdmin):
     list_display = ('user', 'vk_url')
+
+    def has_add_permission(self, request):
+        return False
+
+@admin.register(Expert)
+class ExpertAdmin(admin.ModelAdmin):
+    list_display = ('user',)
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(Grade)
