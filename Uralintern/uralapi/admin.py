@@ -51,7 +51,7 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
     list_display = ('username', 'email', 'system_role', 'is_staff', 'unhashed_password')
-    list_filter = ('is_staff', 'is_superuser', 'is_active',)
+    list_filter = ('is_staff', 'is_active',)
     search_fields = ('username',)
 
 
@@ -163,6 +163,7 @@ class ExpertAdmin(admin.ModelAdmin):
 @admin.register(Grade)
 class GradeAdmin(admin.ModelAdmin):
     list_display = [field.name for field in Grade._meta.get_fields() if field.name != 'id']
+    search_fields = ('user__username','trainee__user__username', 'stage__stage_name')
 
 
 @admin.register(Event)

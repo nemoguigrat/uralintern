@@ -58,7 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(db_index=True, unique=True, verbose_name="Почта")
     unhashed_password = models.CharField(max_length=150, verbose_name="Некэшированный пароль", blank=True, null=True)
     is_active = models.BooleanField(default=True, verbose_name="Активный пользователь")
-    is_staff = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False, verbose_name="Сотрудник")
     ROLES = (
         ('ADMIN', 'Администратор'),
         ('CURATOR', 'Куратор'),
