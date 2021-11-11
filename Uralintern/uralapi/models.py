@@ -5,14 +5,15 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, FileExtensionValidator
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
 
-def upload_to(instance, filename):
-    return f'images/{filename}'
+def upload_to(instance, filename : str):
+    ext = filename.split('.')[-1]
+    return f'images/{instance.id}.{ext}'
 
 
 # TODO Таблица с критериями оценок
@@ -127,7 +128,7 @@ class Trainee(models.Model):
     institution = models.CharField(max_length=150, blank=True, verbose_name="Место обучения")
     team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
     role = models.CharField(max_length=100, blank=True, verbose_name="Роль")
-    image = models.ImageField(upload_to=upload_to, blank=True, null=True)
+    image = models.ImageField(upload_to=upload_to, blank=True, null=True, validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")
 
     def __str__(self):
@@ -232,9 +233,3 @@ def create_profiles(sender, instance: User, created, **kwargs):
             Curator.objects.create(user=instance)
         elif role == "TRAINEE":
             Trainee.objects.create(user=instance, date_start=datetime.now())
-
-#TODO не самый лучший варинт, возможно стоит переписать
-@receiver(pre_delete, sender=Trainee)
-def delete_image(sender, instance: Trainee, **kwargs):
-    if instance.image:
-        os.remove(settings.MEDIA_ROOT + "/" + instance.image.name)

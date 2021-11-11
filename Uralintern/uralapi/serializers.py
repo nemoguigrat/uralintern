@@ -123,7 +123,7 @@ class TraineeSerializer(serializers.ModelSerializer):
 
 # TODO валидировать наличие изображения
 class TraineeImageSerializer(serializers.Serializer):
-    image = serializers.ImageField(use_url=True)
+    image = serializers.ImageField(use_url=True, validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
 
     def update(self, instance: Trainee, validated_data):
         instance.image = validated_data.get('image', instance.image)

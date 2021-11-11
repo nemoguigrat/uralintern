@@ -65,10 +65,8 @@ class TraineeImageUploadAPIView(UpdateAPIView):
         user_id = jwt.decode(user_token, settings.SECRET_KEY, algorithms='HS256')['id']
 
         trainee = Trainee.objects.get(user__pk=user_id)
-        if trainee.image:
-            os.remove(settings.MEDIA_ROOT + "/" + trainee.image.name)
         serializer = self.serializer_class(trainee, data={'image': request.data.get('image', None)})
-        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_200_OK)
 
@@ -145,7 +143,7 @@ class UpdateCreateGradeAPIView(CreateAPIView):
             serializer = self.serializer_class(instance_grade, data=grade) if instance_grade else \
                 self.serializer_class(data=grade)
 
-            serializer.is_valid()
+            serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(status=status.HTTP_200_OK)
 
