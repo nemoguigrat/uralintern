@@ -149,16 +149,46 @@ MEDIA_URL = '/media/'
 # Путь хранения картинок
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+if DEBUG:
+    QUERYCOUNT = {
+        'THRESHOLDS': {
+            'MEDIUM': 50,
+            'HIGH': 200,
+            'MIN_TIME_TO_LOG':0,
+            'MIN_QUERY_COUNT_TO_LOG':0
+        },
+        'IGNORE_REQUEST_PATTERNS': [r'^/admin/'],
+        'IGNORE_SQL_PATTERNS': [],
+        'DISPLAY_DUPLICATES': 5,
+        'RESPONSE_HEADER': 'X-DjangoQueryCount-Count'
+    }
 
-QUERYCOUNT = {
-    'THRESHOLDS': {
-        'MEDIUM': 50,
-        'HIGH': 200,
-        'MIN_TIME_TO_LOG':0,
-        'MIN_QUERY_COUNT_TO_LOG':0
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
     },
-    'IGNORE_REQUEST_PATTERNS': [r'^/admin/'],
-    'IGNORE_SQL_PATTERNS': [],
-    'DISPLAY_DUPLICATES': 5,
-    'RESPONSE_HEADER': 'X-DjangoQueryCount-Count'
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'debug.log'),
+            'formatter' : 'verbose'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+    },
 }

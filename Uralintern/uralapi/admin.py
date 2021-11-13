@@ -10,6 +10,7 @@ from django.shortcuts import redirect, render
 from django.urls import path
 from django.db import transaction
 from .models import *
+from django.contrib import messages
 
 admin.site.unregister(Group)
 
@@ -114,7 +115,6 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
         cash = list(teams)
         for user, data in zip(users, all_data):
             team = teams.filter(team_name=data["Команда"]).first()
-            curator = team.curator if team != None else None
             trainee = Trainee(user=user,
                               internship=data["Направление стажировки"],
                               course=int(data["Курс"]),
@@ -122,7 +122,6 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
                               institution=data["Учебное заведение"],
                               role=data["Роль"],
                               team=team,
-                              curator=curator,
                               date_start="-".join(list(data["дата старта"].split(".")[::-1])))
             local_trainees.append(trainee)
         with transaction.atomic():
