@@ -19,7 +19,7 @@ class LoginAPIView(APIView):
     renderer_classes = (UserJSONRenderer,)
     serializer_class = LoginSerializer
 
-    def get(self, request):
+    def post(self, request):
         user = request.data.get('user', {})
 
         serializer = self.serializer_class(data=user)
@@ -171,13 +171,13 @@ class ReportAPIView(RetrieveAPIView):
         curator_rating = self._get_rating(curator_rating_query)
         expert_rating = self._get_rating(expert_rating_query)
 
-        return Response({
+        return Response({"rating" : {
             "general" : general_rating,
             "self" : self_rating,
             "team" : team_rating,
             "curator" : curator_rating,
             "expert" : expert_rating
-        }, status=status.HTTP_200_OK)
+        }}, status=status.HTTP_200_OK)
 
     def _get_rating(self, grades):
         rating_list = [[],[],[],[]]

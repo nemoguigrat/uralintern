@@ -14,7 +14,8 @@ from django.contrib import messages
 
 admin.site.unregister(Group)
 
-#TODO зарегистрировать таблицу экспертов
+
+# TODO зарегистрировать таблицу экспертов
 class ExportCsvMixin:
     def export_as_csv(self, request, queryset):
         meta = self.model._meta
@@ -61,6 +62,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     change_list_template = "admin/uralapi/trainee_changelist.html"
     list_display = ('user', 'image', 'course', 'internship', 'speciality', 'team', 'role', 'date_start')
     search_fields = ('user__username', 'course', 'internship', 'speciality', 'team__team_name', 'role',)
+    readonly_fields = ('user',)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -108,7 +110,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             local_users.append(user)
 
         with transaction.atomic():
-            users = User.objects.bulk_create(local_users)
+            users = User.objects.bulk_create(local_users, ignore_conflicts=True)
         user_to_create = len(users)
         users = User.objects.order_by("-pk")[:user_to_create]
         teams = Team.objects.select_related('curator')
@@ -125,7 +127,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
                               date_start="-".join(list(data["дата старта"].split(".")[::-1])))
             local_trainees.append(trainee)
         with transaction.atomic():
-            Trainee.objects.bulk_create(local_trainees)
+            Trainee.objects.bulk_create(local_trainees, ignore_conflicts=True)  # ignore_conflict=True
 
     # TODO изменить алгоритм создания пароля, сохранять и где то сохранять пароли для дальшей рассылки
     def generate_password(self):
@@ -141,19 +143,22 @@ class TeamAdmin(admin.ModelAdmin):
 
 @admin.register(Stage)
 class StageAdmin(admin.ModelAdmin):
-    list_display = ('stage_name', 'date',)
+    list_display = ('stage_name', 'date', 'is_active')
 
 
 @admin.register(Curator)
 class CuratorAdmin(admin.ModelAdmin):
     list_display = ('user', 'vk_url')
+    readonly_fields = ('user',)
 
     def has_add_permission(self, request):
         return False
 
+
 @admin.register(Expert)
 class ExpertAdmin(admin.ModelAdmin):
     list_display = ('user',)
+    readonly_fields = ('user',)
 
     def has_add_permission(self, request):
         return False
@@ -162,12 +167,25 @@ class ExpertAdmin(admin.ModelAdmin):
 @admin.register(Grade)
 class GradeAdmin(admin.ModelAdmin):
     list_display = [field.name for field in Grade._meta.get_fields() if field.name != 'id']
-    search_fields = ('user__username','trainee__user__username', 'stage__stage_name')
+    search_fields = ('user__username', 'trainee__user__username', 'stage__stage_name')
+
+    # def formfield_for_foreignkey(self, db_field, request, **kwargs):
+    #     if db_field.name == "trainee":
+    #
+    #         kwargs["queryset"] = Trainee.objects.filter(user=request.user)
+    #     return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ('user', 'trainee', 'stage', 'team')
+        else:
+            return ('team',)
 
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('event_name', 'date',)
+    list_display = ('event_name', 'date', 'is_active')
+
 
 @admin.register(GradeDescription)
 class GradeDescriptionAdmin(admin.ModelAdmin):

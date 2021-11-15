@@ -9,9 +9,10 @@ from django.core.validators import MaxValueValidator, MinValueValidator, FileExt
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
+from django.core.exceptions import ValidationError
 
 
-def upload_to(instance, filename : str):
+def upload_to(instance, filename: str):
     ext = filename.split('.')[-1]
     return f'images/{instance.id}.{ext}'
 
@@ -89,7 +90,6 @@ class User(AbstractBaseUser, PermissionsMixin):
             self.is_superuser = True
         super(User, self).save(*args, **kwargs)
 
-
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
         self.unhashed_password = raw_password
@@ -123,12 +123,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Trainee(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="ФИО")
     internship = models.CharField(max_length=150, blank=True, verbose_name="Напр. стажировки")
-    course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс", validators=[MinValueValidator(1), MaxValueValidator(6)])
+    course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс",
+                                              validators=[MinValueValidator(1), MaxValueValidator(6)])
     speciality = models.CharField(max_length=150, blank=True, verbose_name="Специальность")
     institution = models.CharField(max_length=150, blank=True, verbose_name="Место обучения")
     team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
     role = models.CharField(max_length=100, blank=True, verbose_name="Роль")
-    image = models.ImageField(upload_to=upload_to, blank=True, null=True, validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
+    image = models.ImageField(upload_to=upload_to, blank=True, null=True,
+                              validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")
 
     def __str__(self):
@@ -177,7 +179,8 @@ class Team(models.Model):
 class Stage(models.Model):
     stage_name = models.CharField(max_length=150, verbose_name="Этап", unique=True)
     event = models.ForeignKey('Event', on_delete=models.CASCADE, verbose_name="Мероприятие")
-    date = models.DateField()
+    date = models.DateField(verbose_name="Примерная дата закрытия")
+    is_active = models.BooleanField(default=False)
 
     def __str__(self):
         return self.stage_name
@@ -186,10 +189,16 @@ class Stage(models.Model):
         verbose_name = "Этап"
         verbose_name_plural = "Этапы"
 
+    def save(self, *args, **kwargs):
+        if not self.event.is_active and self.is_active:
+            raise ValidationError("Бла бла бла")
+        super(Stage, self).save(*args, **kwargs)
+
 
 class Event(models.Model):
     event_name = models.CharField(max_length=150, verbose_name="Название мероприятия", unique=True)
-    date = models.DateField()
+    date = models.DateField(verbose_name="Примерная дата окончания")
+    is_active = models.BooleanField(default=False)
 
     def __str__(self):
         return self.event_name
@@ -198,22 +207,35 @@ class Event(models.Model):
         verbose_name = "Мероприятие"
         verbose_name_plural = "Мероприятия"
 
+    def save(self, *args, **kwargs):
+        super(Event, self).save(*args, **kwargs)
+        if not self.is_active:
+            Stage.objects.filter(event=self.pk).update(is_active=False)
 
+#TODO сделать ссылку на команду назад
 class Grade(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Имя оценщика")
     trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE, verbose_name="Имя оцениваемого")
-    team = models.ForeignKey('Team', on_delete=models.CASCADE, verbose_name="Команда")
+    team = models.ForeignKey('Team', on_delete=models.CASCADE, verbose_name="Команда", null=True, blank=True)
     stage = models.ForeignKey('Stage', on_delete=models.CASCADE, verbose_name="Этап")
-    competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность", validators=[MinValueValidator(-1), MaxValueValidator(2)])
-    competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность", validators=[MinValueValidator(-1), MaxValueValidator(2)])
-    competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость", validators=[MinValueValidator(-1), MaxValueValidator(2)])
-    competence4 = models.SmallIntegerField(blank=True, null=True, verbose_name="Командность", validators=[MinValueValidator(-1), MaxValueValidator(2)])
-    date = models.DateTimeField(auto_created=True, auto_now_add=True)
+    competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность",
+                                           validators=[MinValueValidator(-1), MaxValueValidator(2)])
+    competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность",
+                                           validators=[MinValueValidator(-1), MaxValueValidator(2)])
+    competence3 = models.SmallIntegerField(blank=True, null=True, verbose_name="Обучаемость",
+                                           validators=[MinValueValidator(-1), MaxValueValidator(2)])
+    competence4 = models.SmallIntegerField(blank=True, null=True, verbose_name="Командность",
+                                           validators=[MinValueValidator(-1), MaxValueValidator(2)])
+    date = models.DateTimeField(auto_created=True, auto_now_add=True, verbose_name="Дата оценки")
 
     class Meta:
         verbose_name = "Оценка"
         verbose_name_plural = "Оценки"
         unique_together = ("user", "trainee", "stage")
+
+    def save(self, *args, **kwargs):
+        self.team = self.trainee.team# do whatever processing you want
+        super(Grade, self).save(*args, **kwargs)
 
 
 class GradeDescription(models.Model):

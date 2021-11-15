@@ -118,7 +118,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'Europe/Moscow'
+TIME_ZONE = 'Asia/Yekaterinburg'
 
 USE_I18N = True
 
@@ -149,19 +149,19 @@ MEDIA_URL = '/media/'
 # Путь хранения картинок
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-if DEBUG:
-    QUERYCOUNT = {
-        'THRESHOLDS': {
-            'MEDIUM': 50,
-            'HIGH': 200,
-            'MIN_TIME_TO_LOG':0,
-            'MIN_QUERY_COUNT_TO_LOG':0
-        },
-        'IGNORE_REQUEST_PATTERNS': [r'^/admin/'],
-        'IGNORE_SQL_PATTERNS': [],
-        'DISPLAY_DUPLICATES': 5,
-        'RESPONSE_HEADER': 'X-DjangoQueryCount-Count'
-    }
+# if DEBUG:
+QUERYCOUNT = {
+    'THRESHOLDS': {
+        'MEDIUM': 50,
+        'HIGH': 200,
+        'MIN_TIME_TO_LOG':0,
+        'MIN_QUERY_COUNT_TO_LOG':0
+    },
+    'IGNORE_REQUEST_PATTERNS': [r'^/admin/'],
+    'IGNORE_SQL_PATTERNS': [],
+    'DISPLAY_DUPLICATES': 5,
+    'RESPONSE_HEADER': 'X-DjangoQueryCount-Count'
+}
 
 
 LOGGING = {
