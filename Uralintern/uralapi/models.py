@@ -180,7 +180,7 @@ class Stage(models.Model):
     stage_name = models.CharField(max_length=150, verbose_name="Этап", unique=True)
     event = models.ForeignKey('Event', on_delete=models.CASCADE, verbose_name="Мероприятие")
     date = models.DateField(verbose_name="Примерная дата закрытия")
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False, verbose_name="Активный этап")
 
     def __str__(self):
         return self.stage_name
@@ -189,16 +189,15 @@ class Stage(models.Model):
         verbose_name = "Этап"
         verbose_name_plural = "Этапы"
 
-    def save(self, *args, **kwargs):
+    def clean(self):
         if not self.event.is_active and self.is_active:
-            raise ValidationError("Бла бла бла")
-        super(Stage, self).save(*args, **kwargs)
+            raise ValidationError("Невозможно активировать этап, мероприятие не активно")
 
 
 class Event(models.Model):
     event_name = models.CharField(max_length=150, verbose_name="Название мероприятия", unique=True)
     date = models.DateField(verbose_name="Примерная дата окончания")
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False, verbose_name="Активное мероприятие")
 
     def __str__(self):
         return self.event_name
