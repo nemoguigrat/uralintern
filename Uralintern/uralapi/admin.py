@@ -1,6 +1,7 @@
 import csv
 import random
 import string
+import codecs
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, Group
@@ -41,7 +42,7 @@ class CsvImportForm(forms.Form):
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     fieldsets = (
-        (None, {'fields': ('username', 'email', 'system_role', 'password')}),
+        (None, {'fields': ('username', 'email', 'system_role', 'password', 'social_url')}),
         (('Permissions'), {
             'fields': ('is_active', 'is_superuser', 'is_staff'),
         }),
@@ -52,7 +53,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('email', 'username', 'system_role', 'password1', 'password2'),
         }),
     )
-    list_display = ('username', 'email', 'system_role', 'is_staff', 'unhashed_password')
+    list_display = ('username', 'email', 'system_role', 'is_staff', 'unhashed_password', 'social_url')
     list_filter = ('is_staff', 'is_active',)
     search_fields = ('username',)
 
@@ -77,13 +78,13 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     # TODO Отловить ошибки при создании объектов
     def import_csv(self, request):
         if request.method == "POST":
-            csv_file = str(request.FILES["csv_file"].read().decode('utf-8-sig')).split('\r\n')
-            field_names = csv_file[0].split(",")
+            dialect = csv.Sniffer().sniff(str(request.FILES['csv_file'].readline().decode('utf-8-sig')), delimiters=',;')
+            csv_file = csv.DictReader(codecs.iterdecode(request.FILES['csv_file'], encoding='utf-8-sig'), dialect=dialect)
             all_data = []
-            for row in csv_file[1::]:
-                all_data.append(dict(zip(field_names, row.split(","))))
-            self._create_trainee_user(all_data)
-            self.message_user(request, "Your csv file has been imported")
+            for row in csv_file:
+                all_data.append(row)
+            self._create_trainee_user(all_data, request)
+            self.message_user(request, "Файл был импортирован")
             return redirect("..")
         form = CsvImportForm()
         payload = {"form": form}
@@ -91,7 +92,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             request, "admin/uralapi/csv_form.html", payload
         )
 
-    def _create_trainee_user(self, all_data):
+    def _create_trainee_user(self, all_data, request):
         local_users = []
         local_trainees = []
         user_create = 0
@@ -102,10 +103,10 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
                 continue
             random_password = self.generate_password()
 
-            user = User(username=data["ФИО"], email=data["e-mail"])
+            user = User(username=data["ФИО"], email=data["e-mail"]) #, social_url=data["Связь"]
             user.set_password(random_password)
             user_create += 1
-            print(f"Созданно {user_create} из {user_count}")
+            self.message_user(request, f"Созданно {user_create} из {user_count}")
 
             local_users.append(user)
 
@@ -113,7 +114,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             users = User.objects.bulk_create(local_users, ignore_conflicts=True)
         user_to_create = len(users)
         users = User.objects.order_by("-pk")[:user_to_create]
-        teams = Team.objects.select_related('curator')
+        teams = Team.objects.all()
         cash = list(teams)
         for user, data in zip(users, all_data):
             team = teams.filter(team_name=data["Команда"]).first()
@@ -148,7 +149,7 @@ class StageAdmin(admin.ModelAdmin):
 
 @admin.register(Curator)
 class CuratorAdmin(admin.ModelAdmin):
-    list_display = ('user', 'vk_url')
+    list_display = ('user',)
     readonly_fields = ('user',)
 
     def has_add_permission(self, request):

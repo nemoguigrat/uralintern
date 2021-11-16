@@ -59,6 +59,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(db_index=True, max_length=255, verbose_name="ФИО")  # username - ФИО
     email = models.EmailField(db_index=True, unique=True, verbose_name="Почта")
     unhashed_password = models.CharField(max_length=150, verbose_name="Некэшированный пароль", blank=True, null=True)
+    social_url = models.URLField(max_length=200, blank=True, null=True, verbose_name="Связь")
     is_active = models.BooleanField(default=True, verbose_name="Активный пользователь")
     is_staff = models.BooleanField(default=False, verbose_name="Сотрудник")
     ROLES = (
@@ -143,7 +144,6 @@ class Trainee(models.Model):
 
 class Curator(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="ФИО")
-    vk_url = models.URLField(blank=True, null=True, verbose_name="Ссылка в ВК")
 
     def __str__(self):
         return self.user.__str__()
