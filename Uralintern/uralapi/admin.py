@@ -5,18 +5,24 @@ import codecs
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, Group
-from django.forms import forms
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import path
 from django.db import transaction
 from .models import *
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 
 admin.site.unregister(Group)
 
 
-# TODO зарегистрировать таблицу экспертов
+def _generate_password():
+    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+    size = random.randint(8, 12)
+    return ''.join(random.choice(chars) for x in range(size))
+
+
 class ExportCsvMixin:
     def export_as_csv(self, request, queryset):
         meta = self.model._meta
@@ -39,10 +45,41 @@ class CsvImportForm(forms.Form):
     csv_file = forms.FileField()
 
 
+class UserCreationForm(forms.ModelForm):
+    is_random_password = forms.BooleanField(label='Случайный пароль')
+
+    password1 = forms.CharField(label='Пароль', widget=forms.PasswordInput, required=False)
+    password2 = forms.CharField(label='Подтверждение пароля', widget=forms.PasswordInput, required=False)
+
+    class Meta:
+        model = User
+        fields = "__all__"
+
+    def clean_password2(self):
+        # Check that the two password entries match
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Пароли не совпадают!")
+        return password2
+
+    def save(self, commit=True):
+        user = super(UserCreationForm, self).save(commit=False)
+        if self.cleaned_data['is_random_password']:
+            user.set_password(_generate_password())
+        else:
+            user.set_password(self.cleaned_data['password1'])
+        if commit:
+            user.save()
+        return user
+
+
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    add_form = UserCreationForm
+
     fieldsets = (
-        (None, {'fields': ('username', 'email', 'system_role', 'password', 'social_url')}),
+        (None, {'fields': ('username', 'email', 'system_role', 'password', 'social_url',)}),
         (('Permissions'), {
             'fields': ('is_active', 'is_superuser', 'is_staff'),
         }),
@@ -50,7 +87,7 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'username', 'system_role', 'password1', 'password2'),
+            'fields': ('email', 'username', 'system_role', 'password1', 'password2', 'is_random_password'),
         }),
     )
     list_display = ('username', 'email', 'system_role', 'is_staff', 'unhashed_password', 'social_url')
@@ -78,8 +115,10 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     # TODO Отловить ошибки при создании объектов
     def import_csv(self, request):
         if request.method == "POST":
-            dialect = csv.Sniffer().sniff(str(request.FILES['csv_file'].readline().decode('utf-8-sig')), delimiters=',;')
-            csv_file = csv.DictReader(codecs.iterdecode(request.FILES['csv_file'], encoding='utf-8-sig'), dialect=dialect)
+            dialect = csv.Sniffer().sniff(str(request.FILES['csv_file'].readline().decode('utf-8-sig')),
+                                          delimiters=',;')
+            csv_file = csv.DictReader(codecs.iterdecode(request.FILES['csv_file'], encoding='utf-8-sig'),
+                                      dialect=dialect)
             all_data = []
             for row in csv_file:
                 all_data.append(row)
@@ -101,9 +140,9 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             if "e-mail" not in data.keys() or "ФИО" not in data.keys():
                 all_data.remove(data)
                 continue
-            random_password = self.generate_password()
+            random_password = _generate_password()
 
-            user = User(username=data["ФИО"], email=data["e-mail"]) #, social_url=data["Связь"]
+            user = User(username=data["ФИО"], email=data["e-mail"])  # , social_url=data["Связь"]
             user.set_password(random_password)
             user_create += 1
             self.message_user(request, f"Созданно {user_create} из {user_count}")
@@ -129,12 +168,6 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             local_trainees.append(trainee)
         with transaction.atomic():
             Trainee.objects.bulk_create(local_trainees, ignore_conflicts=True)  # ignore_conflict=True
-
-    # TODO изменить алгоритм создания пароля, сохранять и где то сохранять пароли для дальшей рассылки
-    def generate_password(self):
-        chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-        size = random.randint(8, 12)
-        return ''.join(random.choice(chars) for x in range(size))
 
 
 @admin.register(Team)
