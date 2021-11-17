@@ -17,17 +17,8 @@ def upload_to(instance, filename: str):
     return f'images/{instance.id}.{ext}'
 
 
-# TODO Таблица с критериями оценок
-
 class UserManager(BaseUserManager):
-    """
-    Django требует, чтобы кастомные пользователи определяли свой собственный
-    класс Manager. Унаследовавшись от BaseUserManager, мы получаем много того
-    же самого кода, который Django использовал для создания User (для демонстрации).
-    """
-
     def create_user(self, username, email, password=None, role='TRAINEE'):
-        """ Создает и возвращает пользователя с имэйлом, паролем и именем. """
         if username is None:
             raise TypeError('Users must have a username.')
         if len(username.split()) < 2:
@@ -43,7 +34,6 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, username, email, password):
-        """ Создает и возввращет пользователя с привилегиями суперадмина. """
         if password is None:
             raise TypeError('Superusers must have a password.')
 
@@ -71,18 +61,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     system_role = models.CharField(max_length=50, choices=ROLES, default="TRAINEE", verbose_name="Роль пользователя")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата регистрации")
     updated_at = models.DateTimeField(auto_now=True)
-    # Дополнительный поля, необходимые Django
-    # при указании кастомной модели пользователя.
-    # Свойство USERNAME_FIELD сообщает нам, какое поле мы будем использовать
-    # для входа в систему. В данном случае мы хотим использовать почту.
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', ]
-    # Сообщает Django, что определенный выше класс UserManager
-    # должен управлять объектами этого типа.
+
     objects = UserManager()
 
     def __str__(self):
-        """ Строковое представление модели (отображается в консоли) """
         return self.username
 
     def save(self, *args, **kwargs):

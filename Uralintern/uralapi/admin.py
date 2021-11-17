@@ -56,7 +56,6 @@ class UserCreationForm(forms.ModelForm):
         fields = "__all__"
 
     def clean_password2(self):
-        # Check that the two password entries match
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
         if password1 and password2 and password1 != password2:
@@ -134,18 +133,14 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     def _create_trainee_user(self, all_data, request):
         local_users = []
         local_trainees = []
-        user_create = 0
-        user_count = len(all_data)
         for data in all_data:
             if "e-mail" not in data.keys() or "ФИО" not in data.keys():
                 all_data.remove(data)
                 continue
             random_password = _generate_password()
 
-            user = User(username=data["ФИО"], email=data["e-mail"])  # , social_url=data["Связь"]
+            user = User(username=data["ФИО"], email=data["e-mail"], social_url=data["Связь"])
             user.set_password(random_password)
-            user_create += 1
-            self.message_user(request, f"Созданно {user_create} из {user_count}")
 
             local_users.append(user)
 
@@ -177,7 +172,7 @@ class TeamAdmin(admin.ModelAdmin):
 
 @admin.register(Stage)
 class StageAdmin(admin.ModelAdmin):
-    list_display = ('stage_name', 'date', 'is_active')
+    list_display = ('stage_name', 'date', 'event', 'is_active')
 
 
 @admin.register(Curator)

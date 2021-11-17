@@ -7,6 +7,7 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.CharField(max_length=255)
     username = serializers.CharField(max_length=255, read_only=True)
     password = serializers.CharField(max_length=128, write_only=True)
+    system_role = serializers.CharField(max_length=128, read_only=True)
     token = serializers.CharField(max_length=255, read_only=True)
 
     def validate(self, data):
@@ -55,6 +56,7 @@ class LoginSerializer(serializers.Serializer):
             'id': user.pk,
             'email': user.email,
             'username': user.username,
+            'system-role' : user.system_role,
             'token': user.token
         }
 
@@ -73,7 +75,7 @@ class UserTokenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'password', 'token',)
+        fields = ('id', 'email', 'username', 'system_role', 'password', 'token',)
 
         # Параметр read_only_fields является альтернативой явному указанию поля
         # с помощью read_only = True, как мы это делали для пароля выше.
