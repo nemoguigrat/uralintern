@@ -56,7 +56,7 @@ class LoginSerializer(serializers.Serializer):
             'id': user.pk,
             'email': user.email,
             'username': user.username,
-            'system-role' : user.system_role,
+            'system-role': user.system_role,
             'token': user.token
         }
 
@@ -83,19 +83,20 @@ class UserTokenSerializer(serializers.ModelSerializer):
         # состоит в том, что нам не нужно ничего указывать о поле. В поле
         # пароля требуются свойства min_length и max_length,
         # но это не относится к полю токена.
-        read_only_fields = ('token',)
+        read_only_fields = fields
 
 
 class UserNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username')
+        read_only_fields = fields
 
 
-class StageSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    stage_name = serializers.CharField(max_length=150)
-    date = serializers.DateField()
+class StageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stage
+        fields = "__all__"
 
 
 class CuratorSerializer(serializers.Serializer):
@@ -112,6 +113,7 @@ class TeamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = ('team_name', 'curator')
+        read_only_fields = fields
 
 
 class TraineeSerializer(serializers.ModelSerializer):
@@ -121,6 +123,15 @@ class TraineeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trainee
         fields = "__all__"
+        read_only_fields = ('user',
+                            'internship',
+                            'course',
+                            'speciality',
+                            'institution',
+                            'team',
+                            'role',
+                            'image',
+                            'date_start')
 
 
 # TODO валидировать наличие изображения
@@ -140,8 +151,25 @@ class TraineeTeamSerializer(serializers.Serializer):
     role = serializers.CharField(max_length=100, allow_blank=True)
     image = serializers.ImageField(use_url=True)
 
+    class Meta:
+        read_only_fields = ('id', 'user', 'team', 'role', 'image')
 
-class GradeSerializer(serializers.ModelSerializer):
+
+class ListGradeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Grade
+        fields = ('user',
+                  'trainee',
+                  'team',
+                  'stage',
+                  'competence1',
+                  'competence2',
+                  'competence3',
+                  'competence4',)
+        read_only_fields = fields
+
+
+class UpdateGradeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return Grade.objects.create(**validated_data)
 
@@ -150,14 +178,27 @@ class GradeSerializer(serializers.ModelSerializer):
         instance.competence2 = validated_data.get('competence2', instance.competence2)
         instance.competence3 = validated_data.get('competence3', instance.competence3)
         instance.competence4 = validated_data.get('competence4', instance.competence4)
+
+        # competence_fields = [x for x in validated_data.keys() if 'competence' in x]
+        # [setattr(instance, x, validated_data[x]) for x in competence_fields]
         instance.save()
         return instance
+
+    def validate(self, grade):
+        if 'trainee' not in grade.keys():
+            raise ValidationError('Обязательлное поле trainee')
+        if 'stage' not in grade.keys():
+            raise ValidationError('Обязательлное поле stage')
+
+        if not grade['stage'].is_active:
+            raise ValidationError('Невозможно дать оценку по не активному этапу!')
+
+        return grade
 
     class Meta:
         model = Grade
         fields = ('user',
                   'trainee',
-                  'team',
                   'stage',
                   'competence1',
                   'competence2',

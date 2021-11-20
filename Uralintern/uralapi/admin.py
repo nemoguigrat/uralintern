@@ -46,7 +46,7 @@ class CsvImportForm(forms.Form):
 
 
 class UserCreationForm(forms.ModelForm):
-    is_random_password = forms.BooleanField(label='Случайный пароль')
+    is_random_password = forms.BooleanField(label='Случайный пароль', required=False)
 
     password1 = forms.CharField(label='Пароль', widget=forms.PasswordInput, required=False)
     password2 = forms.CharField(label='Подтверждение пароля', widget=forms.PasswordInput, required=False)

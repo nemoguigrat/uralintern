@@ -61,14 +61,13 @@ class TraineeImageUploadAPIView(UpdateAPIView):
     parser_classes = (MultiPartParser, FormParser, FileUploadParser)
 
     def patch(self, request, *args, **kwargs):
-        print(request.data)
         if request.user.system_role != 'TRAINEE':
             raise exceptions.PermissionDenied('Пользователь не является стажером!')
         trainee = Trainee.objects.get(user=request.user)
         serializer = self.serializer_class(trainee, data={'image': request.data.get('image', None)})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(status=status.HTTP_200_OK)
+        return Response({"image": serializer.validated_data}, status=status.HTTP_200_OK)
 
 
 class ListStageAPIView(ListAPIView):
@@ -103,7 +102,7 @@ class ListTeamMembersAPIView(ListAPIView):
             trainee_dict = {}
             trainee_dict['id'] = trainee['id']
             trainee_dict['username'] = trainee['user']['username']
-            trainee_dict['team'] = trainee['team']['team_name']
+            trainee_dict['team_name'] = trainee['team']['team_name']
             trainee_dict['role'] = trainee['role']
             trainee_dict['image'] = trainee['image']
             data.append(trainee_dict)
@@ -118,7 +117,7 @@ class ListTeamMembersAPIView(ListAPIView):
 class ListGradeToTraineeAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
-    serializer_class = GradeSerializer
+    serializer_class = ListGradeSerializer
 
     def get(self, request, *args, **kwargs):
         if request.user.system_role != 'TRAINEE':
@@ -131,7 +130,7 @@ class ListGradeToTraineeAPIView(ListAPIView):
 class ListGradeFromTraineeAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
-    serializer_class = GradeSerializer
+    serializer_class = ListGradeSerializer
 
     def get(self, request, *args, **kwargs):
         if request.user.system_role != 'TRAINEE':
@@ -141,22 +140,21 @@ class ListGradeFromTraineeAPIView(ListAPIView):
         return Response({"grades": serializer.data}, status=status.HTTP_200_OK)
 
 
-class UpdateCreateGradeAPIView(CreateAPIView):
+class UpdateCreateGradeAPIView(APIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
-    serializer_class = GradeSerializer
+    serializer_class = UpdateGradeSerializer
 
     def post(self, request, *args, **kwargs):
-        grade_note = request.data.get('grades', {})
+        grade = request.data.get('grade', {})
+        grade['user'] = request.user.id
+        instance_grade = Grade.objects.select_related('user', 'trainee', 'stage') \
+            .filter(user=grade['user'], trainee=grade['trainee'], stage=grade['stage']).first()
+        serializer = self.serializer_class(instance_grade, data=grade) if instance_grade else \
+            self.serializer_class(data=grade)
 
-        for grade in grade_note:
-            instance_grade = Grade.objects \
-                .filter(user=grade['user'], trainee=grade['trainee'], stage=grade['stage']).first()
-            serializer = self.serializer_class(instance_grade, data=grade) if instance_grade else \
-                self.serializer_class(data=grade)
-
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(status=status.HTTP_200_OK)
 
 
@@ -168,26 +166,23 @@ class ReportAPIView(RetrieveAPIView):
         if request.user.system_role != 'TRAINEE':
             raise exceptions.PermissionDenied('Пользователь не является стажером!')
 
-        trainee = Trainee.objects.get(user=request.user)
+        trainee = Trainee.objects.select_related('team').get(user=request.user)
         grades_query = Grade.objects.select_related('user').filter(trainee=trainee)
         cash = list(grades_query)
 
         self_rating_query = grades_query.filter(user=request.user)
         team_rating_query = grades_query.filter(team=trainee.team)
-        curator_rating_query = grades_query.filter(user__system_role="CURATOR")
-        expert_rating_query = grades_query.filter(user__system_role="EXPERT")
+        expert_rating_query = grades_query.exclude(user__system_role="TRAINEE")
 
         general_rating = self._get_rating(cash)
         self_rating = self._get_rating(self_rating_query)
         team_rating = self._get_rating(team_rating_query)
-        curator_rating = self._get_rating(curator_rating_query)
         expert_rating = self._get_rating(expert_rating_query)
 
         return Response({"rating": {
             "general": general_rating,
             "self": self_rating,
             "team": team_rating,
-            "curator": curator_rating,
             "expert": expert_rating
         }}, status=status.HTTP_200_OK)
 
@@ -204,7 +199,7 @@ class ReportAPIView(RetrieveAPIView):
                 "competence4": self.__average(rating_list[3])}
 
     def __average(self, grades: list):
-        return (sum(grades) / len(grades)) if len(grades) > 0 else 0
+        return round(sum(grades) / len(grades), 2) if len(grades) > 0 else 0
 
 
 class GradeDescriptionAPIView(ListAPIView):
