@@ -129,7 +129,6 @@ class TraineeSerializer(serializers.ModelSerializer):
                             'speciality',
                             'institution',
                             'team',
-                            'role',
                             'image',
                             'date_start')
 
@@ -148,11 +147,11 @@ class TraineeTeamSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     user = UserNameSerializer()
     team = TeamSerializer(required=True)
-    role = serializers.CharField(max_length=100, allow_blank=True)
+    internship = serializers.CharField(max_length=100, allow_blank=True)
     image = serializers.ImageField(use_url=True)
 
     class Meta:
-        read_only_fields = ('id', 'user', 'team', 'role', 'image')
+        read_only_fields = ('id', 'user', 'team', 'internship', 'image')
 
 
 class ListGradeSerializer(serializers.ModelSerializer):

@@ -49,7 +49,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(db_index=True, max_length=255, verbose_name="ФИО")  # username - ФИО
     email = models.EmailField(db_index=True, unique=True, verbose_name="Почта")
     unhashed_password = models.CharField(max_length=150, verbose_name="Некэшированный пароль", blank=True, null=True)
-    social_url = models.URLField(max_length=200, blank=True, null=True, verbose_name="Связь")
+    social_url = models.URLField(max_length=200, blank=True, null=True, verbose_name="Личная страница")
     is_active = models.BooleanField(default=True, verbose_name="Активный пользователь")
     is_staff = models.BooleanField(default=False, verbose_name="Сотрудник")
     ROLES = (
@@ -112,9 +112,8 @@ class Trainee(models.Model):
     course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс",
                                               validators=[MinValueValidator(1), MaxValueValidator(6)])
     speciality = models.CharField(max_length=150, blank=True, verbose_name="Специальность")
-    institution = models.CharField(max_length=150, blank=True, verbose_name="Место обучения")
+    institution = models.CharField(max_length=150, blank=True, verbose_name="Учебное заведение")
     team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
-    role = models.CharField(max_length=100, blank=True, verbose_name="Роль")
     image = models.ImageField(upload_to=upload_to, blank=True, null=True,
                               validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")

@@ -97,7 +97,7 @@ class UserAdmin(BaseUserAdmin):
 @admin.register(Trainee)
 class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     change_list_template = "admin/uralapi/trainee_changelist.html"
-    list_display = ('user', 'image', 'course', 'internship', 'speciality', 'team', 'role', 'date_start')
+    list_display = ('user', 'image', 'course', 'internship', 'speciality', 'institution', 'team', 'date_start')
     search_fields = ('user__username', 'course', 'internship', 'speciality', 'team__team_name', 'role',)
     readonly_fields = ('user',)
 
@@ -134,12 +134,12 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
         local_users = []
         local_trainees = []
         for data in all_data:
-            if "e-mail" not in data.keys() or "ФИО" not in data.keys():
+            if "Частный e-mail" not in data.keys() or "ФИО" not in data.keys():
                 all_data.remove(data)
                 continue
             random_password = _generate_password()
 
-            user = User(username=data["ФИО"], email=data["e-mail"], social_url=data["Связь"])
+            user = User(username=data["ФИО"], email=data["Частный e-mail"], social_url=data["Личная страница"])
             user.set_password(random_password)
 
             local_users.append(user)
@@ -157,9 +157,8 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
                               course=int(data["Курс"]),
                               speciality=data["Учебная специальность"],
                               institution=data["Учебное заведение"],
-                              role=data["Роль"],
                               team=team,
-                              date_start="-".join(list(data["дата старта"].split(".")[::-1])))
+                              date_start=datetime.today())
             local_trainees.append(trainee)
         with transaction.atomic():
             Trainee.objects.bulk_create(local_trainees, ignore_conflicts=True)  # ignore_conflict=True

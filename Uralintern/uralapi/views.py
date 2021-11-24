@@ -92,6 +92,15 @@ class ListTeamMembersAPIView(ListAPIView):
             raise exceptions.PermissionDenied('Пользователь не является стажером!')
         current_trainee = Trainee.objects.select_related('user').get(user=request.user)
         trainee_team = current_trainee.team
+        if trainee_team is None:
+            return Response({"trainee":
+                                 {"id": current_trainee.pk,
+                                  "username": current_trainee.user.username,
+                                  "internship": current_trainee.internship,
+                                  "image": current_trainee.image.url if current_trainee.image else None},
+                             "team" : None},
+                            status=status.HTTP_200_OK)
+
         trainee_team_members = Trainee.objects.filter(team=trainee_team).select_related('user').exclude(
             pk=current_trainee.pk)
 
@@ -103,13 +112,13 @@ class ListTeamMembersAPIView(ListAPIView):
             trainee_dict['id'] = trainee['id']
             trainee_dict['username'] = trainee['user']['username']
             trainee_dict['team_name'] = trainee['team']['team_name']
-            trainee_dict['role'] = trainee['role']
+            trainee_dict['internship'] = trainee['internship']
             trainee_dict['image'] = trainee['image']
             data.append(trainee_dict)
         return Response({"trainee":
                              {"id": current_trainee.pk,
                               "username": current_trainee.user.username,
-                              "role": current_trainee.role,
+                              "internship": current_trainee.internship,
                               "image": current_trainee.image.url if current_trainee.image else None},
                          "team": data}, status=status.HTTP_200_OK)
 
