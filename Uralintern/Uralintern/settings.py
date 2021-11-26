@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'uralapi.apps.UralapiConfig',
     'django_cleanup.apps.CleanupConfig',
+    'import_export'
 ]
 
 MIDDLEWARE = [

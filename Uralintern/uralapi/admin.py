@@ -12,6 +12,8 @@ from django.db import transaction
 from .models import *
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from import_export.admin import ExportMixin
+from .resources import GradeResource
 from django.contrib import messages
 
 admin.site.unregister(Group)
@@ -198,7 +200,8 @@ class ExpertAdmin(admin.ModelAdmin):
 
 
 @admin.register(Grade)
-class GradeAdmin(admin.ModelAdmin):
+class GradeAdmin(ExportMixin, admin.ModelAdmin):
+    resource_class = GradeResource
     list_display = [field.name for field in Grade._meta.get_fields() if field.name != 'id']
     search_fields = ('user__username', 'trainee__user__username', 'stage__stage_name')
 
