@@ -95,7 +95,7 @@ class UserAdmin(BaseUserAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ('system_role', )
+            return ('system_role',)
         return ()
 
 
@@ -103,7 +103,7 @@ class UserAdmin(BaseUserAdmin):
 class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     change_list_template = "admin/uralapi/trainee_changelist.html"
     list_display = ('user', 'image', 'course', 'internship', 'speciality', 'institution', 'team', 'date_start')
-    search_fields = ('user__username', 'course', 'internship', 'speciality', 'team__team_name', 'role',)
+    search_fields = ('user__username', 'course', 'internship', 'speciality', 'team__team_name')
     readonly_fields = ('user',)
 
     def get_urls(self):
@@ -138,25 +138,24 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     def _create_trainee_user(self, all_data, request):
         local_users = []
         local_trainees = []
+        validated_data = []
         for data in all_data:
-            if "Частный e-mail" not in data.keys() or "ФИО" not in data.keys() or not data["Частный e-mail"]:
-                all_data.remove(data)
-                continue
-            random_password = _generate_password()
+            if "Частный e-mail" in data.keys() and "ФИО" in data.keys() and data["Частный e-mail"]:
+                random_password = _generate_password()
 
-            user = User(username=data["ФИО"], email=data["Частный e-mail"], social_url=data["Личная страница"])
-            user.set_password(random_password)
+                user = User(username=data["ФИО"], email=data["Частный e-mail"], social_url=data["Личная страница"])
+                user.set_password(random_password)
 
-            local_users.append(user)
+                local_users.append(user)
+                validated_data.append(data)
 
         with transaction.atomic():
             users = User.objects.bulk_create(local_users, ignore_conflicts=True)
         user_to_create = len(users)
-        print(users)
         users = User.objects.order_by("-pk")[:user_to_create]
         teams = Team.objects.all()
         cash = list(teams)
-        for user, data in zip(users, all_data):
+        for user, data in zip(users, validated_data):
             team = teams.filter(team_name=data["Команда"]).first()
             trainee = Trainee(user=user,
                               internship=data["Направление стажировки"],

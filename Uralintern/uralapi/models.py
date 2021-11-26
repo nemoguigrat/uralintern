@@ -7,7 +7,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MaxValueValidator, MinValueValidator, FileExtensionValidator
 from django.db import models
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 
@@ -238,3 +238,12 @@ def create_profiles(sender, instance: User, created, **kwargs):
             Curator.objects.create(user=instance)
         elif role == "TRAINEE":
             Trainee.objects.create(user=instance, date_start=datetime.now())
+
+
+def delete_parent(sender, instance, **kwargs):
+    if instance.user:
+        instance.user.delete()
+
+post_delete.connect(delete_parent, sender=Trainee)
+post_delete.connect(delete_parent, sender=Curator)
+post_delete.connect(delete_parent, sender=Expert)
