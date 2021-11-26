@@ -89,7 +89,7 @@ class UserTokenSerializer(serializers.ModelSerializer):
 class UserNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username')
+        fields = ('id', 'username', 'social_url')
         read_only_fields = fields
 
 

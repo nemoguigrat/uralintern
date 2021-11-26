@@ -90,8 +90,13 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
     list_display = ('username', 'email', 'system_role', 'is_staff', 'unhashed_password', 'social_url')
-    list_filter = ('is_staff', 'is_active',)
+    list_filter = ('is_staff', 'is_active', 'system_role')
     search_fields = ('username',)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ('system_role', )
+        return ()
 
 
 @admin.register(Trainee)
@@ -134,7 +139,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
         local_users = []
         local_trainees = []
         for data in all_data:
-            if "Частный e-mail" not in data.keys() or "ФИО" not in data.keys():
+            if "Частный e-mail" not in data.keys() or "ФИО" not in data.keys() or not data["Частный e-mail"]:
                 all_data.remove(data)
                 continue
             random_password = _generate_password()
@@ -147,6 +152,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
         with transaction.atomic():
             users = User.objects.bulk_create(local_users, ignore_conflicts=True)
         user_to_create = len(users)
+        print(users)
         users = User.objects.order_by("-pk")[:user_to_create]
         teams = Team.objects.all()
         cash = list(teams)
@@ -196,12 +202,6 @@ class ExpertAdmin(admin.ModelAdmin):
 class GradeAdmin(admin.ModelAdmin):
     list_display = [field.name for field in Grade._meta.get_fields() if field.name != 'id']
     search_fields = ('user__username', 'trainee__user__username', 'stage__stage_name')
-
-    # def formfield_for_foreignkey(self, db_field, request, **kwargs):
-    #     if db_field.name == "trainee":
-    #
-    #         kwargs["queryset"] = Trainee.objects.filter(user=request.user)
-    #     return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
         if obj:

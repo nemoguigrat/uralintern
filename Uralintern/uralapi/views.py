@@ -114,6 +114,7 @@ class ListTeamMembersAPIView(ListAPIView):
             trainee_dict['team_name'] = trainee['team']['team_name']
             trainee_dict['internship'] = trainee['internship']
             trainee_dict['image'] = trainee['image']
+            trainee_dict['social_url'] = trainee['user']['social_url']
             data.append(trainee_dict)
         return Response({"trainee":
                              {"id": current_trainee.pk,
