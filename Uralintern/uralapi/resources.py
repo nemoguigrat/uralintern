@@ -27,3 +27,12 @@ class GradeResource(ModelResource):
                   'competence3',
                   'competence4',
                   'date')
+        export_order = ('user__username',
+                  'trainee__user__username',
+                  'team__team_name',
+                  'stage__stage_name',
+                  'competence1',
+                  'competence2',
+                  'competence3',
+                  'competence4',
+                  'date')

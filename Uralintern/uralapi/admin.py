@@ -174,11 +174,13 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
     list_display = ('team_name', 'curator')
+    list_editable = ('curator', )
 
 
 @admin.register(Stage)
 class StageAdmin(admin.ModelAdmin):
     list_display = ('stage_name', 'date', 'event', 'is_active')
+    list_editable = ('date', 'is_active')
 
 
 @admin.register(Curator)
@@ -215,6 +217,7 @@ class GradeAdmin(ExportMixin, admin.ModelAdmin):
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('event_name', 'date', 'is_active')
+    list_editable = ('date', 'is_active')
 
 
 @admin.register(GradeDescription)

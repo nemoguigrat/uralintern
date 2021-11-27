@@ -163,7 +163,7 @@ class Team(models.Model):
 class Stage(models.Model):
     stage_name = models.CharField(max_length=150, verbose_name="Этап", unique=True)
     event = models.ForeignKey('Event', on_delete=models.CASCADE, verbose_name="Мероприятие")
-    date = models.DateField(verbose_name="Примерная дата закрытия")
+    date = models.DateField(verbose_name="Примерная дата начала")
     is_active = models.BooleanField(default=False, verbose_name="Активный этап")
 
     def __str__(self):
@@ -180,7 +180,7 @@ class Stage(models.Model):
 
 class Event(models.Model):
     event_name = models.CharField(max_length=150, verbose_name="Название мероприятия", unique=True)
-    date = models.DateField(verbose_name="Примерная дата окончания")
+    date = models.DateField(verbose_name="Примерная дата начала")
     is_active = models.BooleanField(default=False, verbose_name="Активное мероприятие")
 
     def __str__(self):
