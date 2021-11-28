@@ -44,7 +44,7 @@ class ExportCsvMixin:
 
 
 class CsvImportForm(forms.Form):
-    csv_file = forms.FileField()
+    csv_file = forms.FileField(label="Файл в формате CSV UTF-8")
 
 
 class UserCreationForm(forms.ModelForm):
@@ -111,15 +111,21 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
-            path('import-csv/', self.import_csv),
+            path('import-csv/', self.admin_site.admin_view(self.import_csv),
+                 name='%s_%s_import' % self.get_model_info())
         ]
         return my_urls + urls
+
+    def get_model_info(self):
+        app_label = self.model._meta.app_label
+        return (app_label, self.model._meta.model_name)
 
     def has_add_permission(self, request):
         return False
 
-    # TODO Отловить ошибки при создании объектов
-    def import_csv(self, request):
+    def import_csv(self, request, *args, **kwargs):
+        from django.template.response import TemplateResponse
+
         if request.method == "POST":
             dialect = csv.Sniffer().sniff(str(request.FILES['csv_file'].readline().decode('utf-8-sig')),
                                           delimiters=',;')
@@ -132,10 +138,17 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
             self.message_user(request, "Файл был импортирован")
             return redirect("..")
         form = CsvImportForm()
-        payload = {"form": form}
-        return render(
-            request, "admin/uralapi/csv_form.html", payload
-        )
+
+        context = {}
+        context.update(self.admin_site.each_context(request))
+
+        context['title'] = 'Импорт стажеров'
+        context['form'] = form
+        context['opts'] = self.model._meta
+        request.current_app = self.admin_site.name
+
+        return TemplateResponse(request, ['admin/uralapi/csv_form.html'],
+                                context)
 
     def _create_trainee_user(self, all_data, request):
         local_users = []
@@ -174,7 +187,7 @@ class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
     list_display = ('team_name', 'curator')
-    list_editable = ('curator', )
+    list_editable = ('curator',)
 
 
 @admin.register(Stage)

@@ -1,14 +1,13 @@
-{% extends 'admin/base.html' %}
-
+{% extends 'admin/change_form.html' %}
+{% load i18n admin_urls %}
 {% block content %}
     <div>
         <form action="." method="POST" enctype="multipart/form-data">
             {{ form.as_p }}
             {% csrf_token %}
 
-                <button type="submit">Upload CSV</button>
+            <input class="submit-row" type="submit" name="Загрузить CSV">
         </form>
     </div>
     <br />
-
 {% endblock %}
