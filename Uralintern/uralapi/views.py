@@ -11,6 +11,7 @@ from .models import *
 from .renderers import UserJSONRenderer
 from .serializers import *
 from rest_framework import exceptions
+from .functions import _get_rating
 
 
 # Create your views here.
@@ -184,10 +185,10 @@ class ReportAPIView(RetrieveAPIView):
         team_rating_query = grades_query.filter(team=trainee.team)
         expert_rating_query = grades_query.exclude(user__system_role="TRAINEE")
 
-        general_rating = self._get_rating(cash)
-        self_rating = self._get_rating(self_rating_query)
-        team_rating = self._get_rating(team_rating_query)
-        expert_rating = self._get_rating(expert_rating_query)
+        general_rating = _get_rating(cash)
+        self_rating = _get_rating(self_rating_query)
+        team_rating = _get_rating(team_rating_query)
+        expert_rating = _get_rating(expert_rating_query)
 
         return Response({"rating": {
             "general": general_rating,
@@ -195,21 +196,6 @@ class ReportAPIView(RetrieveAPIView):
             "team": team_rating,
             "expert": expert_rating
         }}, status=status.HTTP_200_OK)
-
-    def _get_rating(self, grades):
-        rating_list = [[], [], [], []]
-        for grade in grades:
-            rating_list[0].append(grade.competence1 if grade.competence1 != None else 0)
-            rating_list[1].append(grade.competence2 if grade.competence2 != None else 0)
-            rating_list[2].append(grade.competence3 if grade.competence3 != None else 0)
-            rating_list[3].append(grade.competence4 if grade.competence4 != None else 0)
-        return {"competence1": self.__average(rating_list[0]),
-                "competence2": self.__average(rating_list[1]),
-                "competence3": self.__average(rating_list[2]),
-                "competence4": self.__average(rating_list[3])}
-
-    def __average(self, grades: list):
-        return round(sum(grades) / len(grades), 2) if len(grades) > 0 else 0
 
 
 class GradeDescriptionAPIView(ListAPIView):

@@ -1,6 +1,4 @@
 import csv
-import random
-import string
 import codecs
 
 from django.contrib import admin
@@ -15,64 +13,10 @@ from django.contrib.auth.forms import UserCreationForm
 from import_export.admin import ExportMixin
 from .resources import GradeResource
 from django.contrib import messages
+from .functions import _generate_pdf_report, _generate_password
+from .forms import CsvImportForm, UserCreationForm
 
 admin.site.unregister(Group)
-
-
-def _generate_password():
-    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-    size = random.randint(8, 12)
-    return ''.join(random.choice(chars) for x in range(size))
-
-
-class ExportCsvMixin:
-    def export_as_csv(self, request, queryset):
-        meta = self.model._meta
-        field_names = [field.name for field in meta.fields]
-
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename={}.csv'.format(meta)
-        writer = csv.writer(response)
-
-        writer.writerow(field_names)
-        for obj in queryset:
-            row = writer.writerow([getattr(obj, field) for field in field_names])
-
-        return response
-
-    export_as_csv.short_description = "Export Selected"
-
-
-class CsvImportForm(forms.Form):
-    csv_file = forms.FileField(label="Файл в формате CSV UTF-8")
-
-
-class UserCreationForm(forms.ModelForm):
-    is_random_password = forms.BooleanField(label='Случайный пароль', required=False)
-
-    password1 = forms.CharField(label='Пароль', widget=forms.PasswordInput, required=False)
-    password2 = forms.CharField(label='Подтверждение пароля', widget=forms.PasswordInput, required=False)
-
-    class Meta:
-        model = User
-        fields = "__all__"
-
-    def clean_password2(self):
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise ValidationError("Пароли не совпадают!")
-        return password2
-
-    def save(self, commit=True):
-        user = super(UserCreationForm, self).save(commit=False)
-        if self.cleaned_data['is_random_password']:
-            user.set_password(_generate_password())
-        else:
-            user.set_password(self.cleaned_data['password1'])
-        if commit:
-            user.save()
-        return user
 
 
 @admin.register(User)
@@ -102,11 +46,17 @@ class UserAdmin(BaseUserAdmin):
 
 
 @admin.register(Trainee)
-class TraineeAdmin(admin.ModelAdmin, ExportCsvMixin):
+class TraineeAdmin(admin.ModelAdmin):
     change_list_template = "admin/uralapi/trainee_changelist.html"
     list_display = ('user', 'image', 'course', 'internship', 'speciality', 'institution', 'team', 'date_start')
     search_fields = ('user__username', 'course', 'internship', 'speciality', 'team__team_name')
     readonly_fields = ('user',)
+    actions = ["generate_pdf_for_selected_trainees"]
+
+    def generate_pdf_for_selected_trainees(self, request, queryset):
+        _generate_pdf_report(request, queryset)
+
+    generate_pdf_for_selected_trainees.short_description = "Отчет для выбранных стажеров"
 
     def get_urls(self):
         urls = super().get_urls()

@@ -21,6 +21,8 @@ from django.urls import path, include
 
 from . import settings
 
+admin.site.site_header = 'Уральский центр стажировок'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('uralapi.urls')),
