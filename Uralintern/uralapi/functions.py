@@ -1,17 +1,23 @@
 import random
 import string
+import pdfkit
 
-#Генерация отчетов в ПДФ в TraineeAdmin actions
-def _generate_pdf_report(request, queryset):
+from django.shortcuts import render
+from django.http import FileResponse
+
+# Генерация отчетов в ПДФ в TraineeAdmin actions
+def _generate_pdf_report(request, queryset, self_rating_query, team_rating_query, expert_rating_query):
     pass
 
-#Генерация пароля во время импорта в TraineeAdmin и при создании пользователя в UserCreationForm
+
+# Генерация пароля во время импорта в TraineeAdmin и при создании пользователя в UserCreationForm
 def _generate_password():
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
     size = random.randint(8, 12)
     return ''.join(random.choice(chars) for x in range(size))
 
-#Подсчет оценок для стажеров в генерации отчета и ReportAPIView
+
+# Подсчет оценок для стажеров в генерации отчета и ReportAPIView
 def _get_rating(grades):
     rating_list = [[], [], [], []]
     average = lambda grades: round(sum(grades) / len(grades), 2) if len(grades) > 0 else 0
@@ -25,7 +31,8 @@ def _get_rating(grades):
             "competence3": average(rating_list[2]),
             "competence4": average(rating_list[3])}
 
-#Установка имени для загруженного изображения в Trainee models.py
+
+# Установка имени для загруженного изображения в Trainee models.py
 def _upload_to(instance, filename: str):
     ext = filename.split('.')[-1]
     return f'images/{instance.id}.{ext}'

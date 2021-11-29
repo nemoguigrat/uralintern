@@ -4,12 +4,10 @@ import codecs
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, Group
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.urls import path
 from django.db import transaction
 from .models import *
-from django import forms
-from django.contrib.auth.forms import UserCreationForm
 from import_export.admin import ExportMixin
 from .resources import GradeResource
 from django.contrib import messages
@@ -54,7 +52,7 @@ class TraineeAdmin(admin.ModelAdmin):
     actions = ["generate_pdf_for_selected_trainees"]
 
     def generate_pdf_for_selected_trainees(self, request, queryset):
-        _generate_pdf_report(request, queryset)
+        pass
 
     generate_pdf_for_selected_trainees.short_description = "Отчет для выбранных стажеров"
 

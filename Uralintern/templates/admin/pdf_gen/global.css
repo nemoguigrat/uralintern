@@ -1,0 +1,144 @@
+/*---------------------------*/
+/*          GLOBAL           */
+/*---------------------------*/
+
+:root {
+    --main-yellow-color: #ebc71d;
+    --main-orange-color: #f57c00;
+    --main-gray-color: #303030;
+}
+
+html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Roboto, sans-serif;
+}
+
+h2 {
+    font-weight: normal;
+    font-size: xx-large;
+    text-align: center;
+}
+
+.body {
+    top: 60px;
+    position: relative;
+    height: 100%;
+}
+
+.content {
+    margin: 0;
+    position: relative;
+}
+
+/*---------------------------*/
+/*          NAVBAR           */
+/*---------------------------*/
+
+.navbar {
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 60px;
+    background-color: black;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    z-index: 1000;
+    box-sizing: border-box;
+    color: var(--main-yellow-color);
+}
+
+.navbar-logo {
+    cursor: pointer;
+    margin: auto 0;
+    width: 50px;
+    height: 50px;
+}
+
+.navbar-text {
+    font-size: 23px;
+    color: var(--main-yellow-color);
+    font-weight: bold;
+    margin-left: 5px;
+    margin-bottom: auto;
+    margin-top: auto;
+}
+
+.navbar-link, .navbar-link:visited, .navbar-link:active, .navbar-link:hover {
+    color: var(--main-yellow-color);
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.navbar-icon {
+    margin-right: 5px;
+}
+
+.navbar-link:hover {
+    color: var(--main-yellow-color);
+    text-decoration: underline;
+}
+
+.navbar-dropdown-button {
+    color: var(--main-yellow-color);
+    cursor: default;
+    margin: auto;
+}
+
+.navbar-dropdown {
+    margin: auto 0;
+}
+
+.navbar-dropdown-content {
+    display: none;
+    position: fixed;
+    background-color: var(--main-gray-color);
+    margin-left: auto;
+    margin-right: auto;
+    z-index: 2000;
+    border-radius: 20px;
+}
+
+.navbar-dropdown-content span {
+    display: block;
+    float: none;
+}
+
+.navbar-dropdown-arrow {
+    margin-bottom: auto;
+    margin-top: auto;
+    vertical-align: middle;
+}
+
+.navbar-dropdown:hover .navbar-dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .navbar-dropdown-content {
+    display: block;
+}
+
+.navbar-dropdown-link, .navbar-dropdown-link:visited, .navbar-dropdown-link:active, .navbar-dropdown-link:hover {
+    color: var(--main-yellow-color);
+    cursor: pointer;
+    margin: 20px;
+    display: flex;
+    text-align: center;
+    text-decoration: none;
+    flex-direction: row;
+    align-items: center;
+}
+
+.navbar-dropdown-link:hover {
+    text-decoration: underline;
+}
+
+.navbar-dropdown-icon {
+    margin-right: 5px;
+}
