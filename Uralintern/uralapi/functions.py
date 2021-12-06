@@ -1,13 +1,5 @@
 import random
 import string
-import pdfkit
-
-from django.shortcuts import render
-from django.http import FileResponse
-
-# Генерация отчетов в ПДФ в TraineeAdmin actions
-def _generate_pdf_report(request, queryset, self_rating_query, team_rating_query, expert_rating_query):
-    pass
 
 
 # Генерация пароля во время импорта в TraineeAdmin и при создании пользователя в UserCreationForm
@@ -15,6 +7,23 @@ def _generate_password():
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
     size = random.randint(8, 12)
     return ''.join(random.choice(chars) for x in range(size))
+
+def _get_report(trainee, grades):
+    general_rating_query = grades.filter(trainee=trainee)
+    self_rating_query = grades.filter(user=trainee.user)
+    team_rating_query = grades.filter(team=trainee.team)
+    expert_rating_query = grades.exclude(user__system_role="TRAINEE")
+
+    general_rating = _get_rating(general_rating_query)
+    self_rating = _get_rating(self_rating_query)
+    team_rating = _get_rating(team_rating_query)
+    expert_rating = _get_rating(expert_rating_query)
+
+    return {
+        "general": general_rating,
+        "self": self_rating,
+        "team": team_rating,
+        "expert": expert_rating}
 
 
 # Подсчет оценок для стажеров в генерации отчета и ReportAPIView

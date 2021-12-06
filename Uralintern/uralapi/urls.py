@@ -13,4 +13,5 @@ urlpatterns = [
     path('trainee', TraineeRetrieveAPIView.as_view()),
     path('user', UserRetrieveAPIView.as_view()),
     path('user/login', LoginAPIView.as_view()),
+    path('curator/teams', ListTeamMembersForCuratorAPIView.as_view())
 ]

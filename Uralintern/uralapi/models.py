@@ -117,6 +117,11 @@ class Trainee(models.Model):
     def __str__(self):
         return self.user.__str__()
 
+    @property
+    def get__image_name(self):
+        if self.image:
+            return self.image.name.split('/')[1].strip()
+
     class Meta:
         verbose_name = "Стажер"
         verbose_name_plural = "Стажеры"

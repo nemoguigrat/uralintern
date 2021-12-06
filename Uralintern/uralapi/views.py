@@ -125,6 +125,33 @@ class ListTeamMembersAPIView(ListAPIView):
                          "team": data}, status=status.HTTP_200_OK)
 
 
+class ListTeamMembersForCuratorAPIView(ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer,)
+    serializer_class = TraineeTeamSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request, *args, **kwargs):
+        if request.user.system_role != 'CURATOR':
+            raise exceptions.PermissionDenied('Пользователь не является куратором!')
+        curator = Curator.objects.select_related('user').get(user=request.user)
+        teams_members = Trainee.objects.select_related('user', 'team').filter(team__curator=curator).order_by('team__team_name')
+
+        serializer = self.serializer_class(teams_members, many=True)
+
+        data = []
+        for trainee in serializer.data:
+            trainee_dict = {}
+            trainee_dict['id'] = trainee['id']
+            trainee_dict['username'] = trainee['user']['username']
+            trainee_dict['team_name'] = trainee['team']['team_name']
+            trainee_dict['internship'] = trainee['internship']
+            trainee_dict['image'] = trainee['image']
+            trainee_dict['social_url'] = trainee['user']['social_url']
+            data.append(trainee_dict)
+        return Response({"members" : data}, status=status.HTTP_200_OK)
+
+
 class ListGradeToTraineeAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)

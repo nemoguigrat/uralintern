@@ -11,7 +11,7 @@ from .models import *
 from import_export.admin import ExportMixin
 from .resources import GradeResource
 from django.contrib import messages
-from .functions import _generate_pdf_report, _generate_password
+from .functions import _generate_password, _get_report
 from .forms import CsvImportForm, UserCreationForm
 
 admin.site.unregister(Group)
@@ -49,12 +49,6 @@ class TraineeAdmin(admin.ModelAdmin):
     list_display = ('user', 'image', 'course', 'internship', 'speciality', 'institution', 'team', 'date_start')
     search_fields = ('user__username', 'course', 'internship', 'speciality', 'team__team_name')
     readonly_fields = ('user',)
-    actions = ["generate_pdf_for_selected_trainees"]
-
-    def generate_pdf_for_selected_trainees(self, request, queryset):
-        pass
-
-    generate_pdf_for_selected_trainees.short_description = "Отчет для выбранных стажеров"
 
     def get_urls(self):
         urls = super().get_urls()
@@ -118,7 +112,7 @@ class TraineeAdmin(admin.ModelAdmin):
         users = User.objects.order_by("-pk")[:user_to_create]
         teams = Team.objects.all()
         cash = list(teams)
-        for user, data in zip(users, validated_data):
+        for user, data in zip(users, validated_data[::-1]):
             team = teams.filter(team_name=data["Команда"]).first()
             trainee = Trainee(user=user,
                               internship=data["Направление стажировки"],

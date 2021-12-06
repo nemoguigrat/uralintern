@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'uralapi.apps.UralapiConfig',
     'django_cleanup.apps.CleanupConfig',
-    'import_export'
+    'import_export',
 ]
 
 MIDDLEWARE = [
@@ -100,12 +100,11 @@ DATABASES = {
 
     # 'default': {
     #     'ENGINE': 'django.db.backends.mysql',
-    #     'NAME': 'sharosuc_data',
-    #     'USER' : 'sharosuc_data',
-    #     'PASSWORD' : 'asdLBKL87',
-    #     'HOST' : 'localhost',
-    #     'PORT' : '3306'
-    #
+    #     'NAME': os.environ.get('NAME'),
+    #     'USER' : os.environ.get('USER'),
+    #     'PASSWORD' : os.environ.get('PASSWORD'),
+    #     'HOST' : os.environ.get('HOST'),
+    #     'PORT' : os.environ.get('PORT')
     # }
 }
 
