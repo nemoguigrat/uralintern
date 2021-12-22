@@ -115,10 +115,15 @@ class TeamSerializer(serializers.ModelSerializer):
         fields = ('team_name', 'curator')
         read_only_fields = fields
 
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = "__all__"
 
 class TraineeSerializer(serializers.ModelSerializer):
     user = UserNameSerializer()
     team = TeamSerializer()
+    event = EventSerializer()
 
     class Meta:
         model = Trainee
@@ -130,6 +135,7 @@ class TraineeSerializer(serializers.ModelSerializer):
                             'institution',
                             'team',
                             'image',
+                            'event',
                             'date_start')
 
 
@@ -177,7 +183,7 @@ class UpdateGradeSerializer(serializers.ModelSerializer):
         instance.competence2 = validated_data.get('competence2', instance.competence2)
         instance.competence3 = validated_data.get('competence3', instance.competence3)
         instance.competence4 = validated_data.get('competence4', instance.competence4)
-
+        instance.date = datetime.now()
         # competence_fields = [x for x in validated_data.keys() if 'competence' in x]
         # [setattr(instance, x, validated_data[x]) for x in competence_fields]
         instance.save()

@@ -2,7 +2,7 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-    path('stage', ListStageAPIView.as_view()),
+    path('stage', ListStagesForTraineeAPIView.as_view()),
     path('grade/description', GradeDescriptionAPIView.as_view()),
     path('grade/get/to', ListGradeToTraineeAPIView.as_view()),
     path('grade/get/from', ListGradeFromTraineeAPIView.as_view()),

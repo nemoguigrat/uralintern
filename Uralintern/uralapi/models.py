@@ -112,6 +112,7 @@ class Trainee(models.Model):
     team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
     image = models.ImageField(upload_to=_upload_to, blank=True, null=True,
                               validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
+    event = models.ForeignKey('Event', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Мероприятие")
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")
 
     def __str__(self):

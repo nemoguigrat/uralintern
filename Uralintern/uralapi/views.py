@@ -71,13 +71,16 @@ class TraineeImageUploadAPIView(UpdateAPIView):
         return Response({"image": serializer.validated_data}, status=status.HTTP_200_OK)
 
 
-class ListStageAPIView(ListAPIView):
+class ListStagesForTraineeAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = StageSerializer
 
     def get(self, request, *args, **kwargs):
-        stages = Stage.objects.filter(is_active=True)
+        if request.user.system_role != 'TRAINEE':
+            raise exceptions.PermissionDenied('Пользователь не является стажером!')
+        trainee = Trainee.objects.select_related('event').get(user=request.user)
+        stages = Stage.objects.filter(event=trainee.event ,is_active=True)
         serializer = self.serializer_class(stages, many=True)
         return Response({'stages': serializer.data}, status=status.HTTP_200_OK)
 
@@ -184,6 +187,7 @@ class UpdateCreateGradeAPIView(APIView):
     serializer_class = UpdateGradeSerializer
 
     def post(self, request, *args, **kwargs):
+        print(Trainee.objects.filter(user__username='Биккинина Вероника Эдуардовна').first().event)
         grade = request.data.get('grade', {})
         grade['user'] = request.user.id
         instance_grade = Grade.objects.select_related('user', 'trainee', 'stage') \
