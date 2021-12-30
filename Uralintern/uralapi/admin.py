@@ -39,19 +39,25 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('username',)
     actions = ["send_emails"]
 
-    def send_emails(self, request, queryset):
+    def send_emails(self, queryset):
+        """
+        Действие в выпадающем списке в панели администратора, рассылка сообщения выбранным пользователям на почтовые ящики
+        """
         mails = []
         for user in queryset:
-            subject = "Uralintern"
-            message = f"Привет! Ты учавствуешь в стажировке, твои данные для входа:\n" \
-                      f"Почта - {user.email}\n" \
-                      f"Пароль - {user.unhashed_password}"
+            subject = "Вход в личный кабинет Uralintern"
+            message = f"Привет!\nВот твои логин и пароль для входа в личный кабинет для оценки по стажёрским компетециям." \
+                      f"\nЛогин -  {user.email}" \
+                      f"\nПароль - {user.unhashed_password}" \
+                      f"\nОценки можно давать через веб-приложение pa-uralintern.herokuapp.com" \
+                      f" и мобильное приложение drive.google.com/drive/folders/10kfrNJ5FTeJHMkG1pdri1tyDOi8uo0oT"
             mails.append((subject, message, settings.EMAIL_HOST_USER, [user.email]))
         send_mass_mail(mails, fail_silently=False)
 
     send_emails.short_description = "Разослать данные на почту"
 
     def get_readonly_fields(self, request, obj=None):
+        #Переопределение метода, разрешает изменять роль только при создании записи
         if obj:
             return ('system_role',)
         return ()
@@ -69,18 +75,19 @@ class TraineeAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         my_urls = [
             path('import-csv/', self.admin_site.admin_view(self.import_csv),
-                 name='%s_%s_import' % self.get_model_info())
+                 name='%s_%s_import' % self.__get_model_info())
         ]
         return my_urls + urls
 
-    def get_model_info(self):
+    def __get_model_info(self):
         app_label = self.model._meta.app_label
         return (app_label, self.model._meta.model_name)
 
     def has_add_permission(self, request):
         return False
 
-    def import_csv(self, request, *args, **kwargs):
+    def import_csv(self, request):
+        """Импорт данных из CSV"""
         from django.template.response import TemplateResponse
 
         if request.method == "POST":
@@ -91,7 +98,7 @@ class TraineeAdmin(admin.ModelAdmin):
             all_data = []
             for row in csv_file:
                 all_data.append(row)
-            self._create_trainee_user(all_data, request)
+            self._create_trainee_user(all_data)
             self.message_user(request, "Файл был импортирован")
             return redirect("..")
         form = CsvImportForm()
@@ -107,10 +114,15 @@ class TraineeAdmin(admin.ModelAdmin):
         return TemplateResponse(request, ['admin/uralapi/csv_form.html'],
                                 context)
 
-    def _create_trainee_user(self, all_data, request):
+    def _create_trainee_user(self, all_data):
+        """ Метод создания пользователя и связанной с ним записи о стажере.
+
+        :param all_data: Словарь данных о стажерах
+        """
         local_users = []
         local_trainees = []
         validated_data = {}
+        # Последний созданый пользователь
         latest_user = User.objects.latest('pk')
         for data in all_data:
             if "Частный e-mail" in data.keys() and "ФИО" in data.keys() and data["Частный e-mail"]:
@@ -124,7 +136,7 @@ class TraineeAdmin(admin.ModelAdmin):
 
         with transaction.atomic():
             User.objects.bulk_create(local_users, ignore_conflicts=True)
-
+        # Берет пользователей, которые были созданы позже чем latest_user
         users = User.objects.filter(pk__gt=latest_user.pk).order_by("-pk")
         users_with_data = {}
         for user in users:
@@ -150,7 +162,7 @@ class TraineeAdmin(admin.ModelAdmin):
 
             local_trainees.append(trainee)
         with transaction.atomic():
-            Trainee.objects.bulk_create(local_trainees, ignore_conflicts=False)  # ignore_conflict=True
+            Trainee.objects.bulk_create(local_trainees, ignore_conflicts=True)  # ignore_conflict=True
 
 
 @admin.register(Team)

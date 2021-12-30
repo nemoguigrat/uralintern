@@ -1,8 +1,9 @@
 from django.urls import path
 from .views import *
+from .models import Stage
 
 urlpatterns = [
-    path('stage', ListStagesForTraineeAPIView.as_view()),
+    path('stages/<int:pk>', ListStagesAPIView.as_view()),
     path('grade/description', GradeDescriptionAPIView.as_view()),
     path('grade/get/to', ListGradeToTraineeAPIView.as_view()),
     path('grade/get/from', ListGradeFromTraineeAPIView.as_view()),

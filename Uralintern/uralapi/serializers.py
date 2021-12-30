@@ -155,9 +155,10 @@ class TraineeTeamSerializer(serializers.Serializer):
     team = TeamSerializer(required=True)
     internship = serializers.CharField(max_length=100, allow_blank=True)
     image = serializers.ImageField(use_url=True)
+    event = EventSerializer()
 
     class Meta:
-        read_only_fields = ('id', 'user', 'team', 'internship', 'image')
+        read_only_fields = ('id', 'user', 'team', 'internship', 'image', 'event')
 
 
 class ListGradeSerializer(serializers.ModelSerializer):
@@ -184,8 +185,6 @@ class UpdateGradeSerializer(serializers.ModelSerializer):
         instance.competence3 = validated_data.get('competence3', instance.competence3)
         instance.competence4 = validated_data.get('competence4', instance.competence4)
         instance.date = datetime.now()
-        # competence_fields = [x for x in validated_data.keys() if 'competence' in x]
-        # [setattr(instance, x, validated_data[x]) for x in competence_fields]
         instance.save()
         return instance
 

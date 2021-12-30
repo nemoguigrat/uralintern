@@ -119,7 +119,7 @@ class Trainee(models.Model):
         return self.user.__str__()
 
     @property
-    def get__image_name(self):
+    def get_image_name(self):
         if self.image:
             return self.image.name.split('/')[1].strip()
 
@@ -197,7 +197,6 @@ class Event(models.Model):
         if not self.is_active:
             Stage.objects.filter(event=self.pk).update(is_active=False)
 
-#TODO сделать ссылку на команду назад
 class Grade(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Имя оценщика")
     trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE, verbose_name="Имя оцениваемого")
@@ -234,6 +233,8 @@ class GradeDescription(models.Model):
 
 @receiver(post_save, sender=User)
 def create_profiles(sender, instance: User, created, **kwargs):
+    """Обработчик сигнала. При создании пользователя создает запись о
+    нем в таблице Trainee или Curator(в зависимости от выбранной роли пользователя)"""
     if created:
         role = instance.system_role
         if role == "CURATOR":
@@ -243,6 +244,7 @@ def create_profiles(sender, instance: User, created, **kwargs):
 
 
 def delete_parent(sender, instance, **kwargs):
+    """Обработчик сигнала. Удаляет родителя при удалении дочерней записи."""
     if instance.user:
         instance.user.delete()
 

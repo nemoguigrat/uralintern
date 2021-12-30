@@ -54,7 +54,6 @@ class TraineeRetrieveAPIView(RetrieveAPIView):
         return Response({"trainee": serializer.data}, status=status.HTTP_200_OK)
 
 
-# TODO возможно придется переписать, так как кураторы и эксперты пока так же могут войти в приложение
 class TraineeImageUploadAPIView(UpdateAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
@@ -71,16 +70,13 @@ class TraineeImageUploadAPIView(UpdateAPIView):
         return Response({"image": serializer.validated_data}, status=status.HTTP_200_OK)
 
 
-class ListStagesForTraineeAPIView(ListAPIView):
+class ListStagesAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = StageSerializer
 
     def get(self, request, *args, **kwargs):
-        if request.user.system_role != 'TRAINEE':
-            raise exceptions.PermissionDenied('Пользователь не является стажером!')
-        trainee = Trainee.objects.select_related('event').get(user=request.user)
-        stages = Stage.objects.filter(event=trainee.event ,is_active=True)
+        stages = Stage.objects.filter(event=self.kwargs.get('pk'), is_active=True)
         serializer = self.serializer_class(stages, many=True)
         return Response({'stages': serializer.data}, status=status.HTTP_200_OK)
 
@@ -101,7 +97,8 @@ class ListTeamMembersAPIView(ListAPIView):
                                  {"id": current_trainee.pk,
                                   "username": current_trainee.user.username,
                                   "internship": current_trainee.internship,
-                                  "image": current_trainee.image.url if current_trainee.image else None},
+                                  "image": current_trainee.image.url if current_trainee.image else None,
+                                  "event": current_trainee.event.id if current_trainee.event else None},
                              "team" : None},
                             status=status.HTTP_200_OK)
 
@@ -119,12 +116,14 @@ class ListTeamMembersAPIView(ListAPIView):
             trainee_dict['internship'] = trainee['internship']
             trainee_dict['image'] = trainee['image']
             trainee_dict['social_url'] = trainee['user']['social_url']
+            trainee_dict['event'] = trainee['event']['id'] if trainee['event'] else None
             data.append(trainee_dict)
         return Response({"trainee":
                              {"id": current_trainee.pk,
                               "username": current_trainee.user.username,
                               "internship": current_trainee.internship,
-                              "image": current_trainee.image.url if current_trainee.image else None},
+                              "image": current_trainee.image.url if current_trainee.image else None,
+                              "event": current_trainee.event.id if current_trainee.event else None},
                          "team": data}, status=status.HTTP_200_OK)
 
 
@@ -187,7 +186,6 @@ class UpdateCreateGradeAPIView(APIView):
     serializer_class = UpdateGradeSerializer
 
     def post(self, request, *args, **kwargs):
-        print(Trainee.objects.filter(user__username='Биккинина Вероника Эдуардовна').first().event)
         grade = request.data.get('grade', {})
         grade['user'] = request.user.id
         instance_grade = Grade.objects.select_related('user', 'trainee', 'stage') \
