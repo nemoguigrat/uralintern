@@ -139,7 +139,6 @@ class TraineeSerializer(serializers.ModelSerializer):
                             'date_start')
 
 
-# TODO валидировать наличие изображения
 class TraineeImageSerializer(serializers.Serializer):
     image = serializers.ImageField(use_url=True, validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
 
