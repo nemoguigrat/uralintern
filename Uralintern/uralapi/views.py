@@ -11,7 +11,7 @@ from .models import *
 from .renderers import UserJSONRenderer
 from .serializers import *
 from rest_framework import exceptions
-from .functions import _get_rating
+from .functions import get_rating, serialize_stages
 
 
 # Create your views here.
@@ -90,12 +90,14 @@ class ListTeamMembersAPIView(ListAPIView):
     def get(self, request, *args, **kwargs):
         if request.user.system_role != 'TRAINEE':
             raise exceptions.PermissionDenied('Пользователь не является стажером!')
-        current_trainee = Trainee.objects.select_related('user').get(user=request.user)
+        current_trainee = Trainee.objects.select_related('user', 'team', 'event').get(user=request.user)
+        all_stages = Stage.objects.select_related('event').all()
         trainee_team = current_trainee.team
         data = None
+        cash = list(all_stages)
 
         if trainee_team:
-            trainee_team_members = Trainee.objects.filter(team=trainee_team).select_related('user').exclude(
+            trainee_team_members = Trainee.objects.select_related('user', 'team', 'event').filter(team__pk=trainee_team.pk).exclude(
                 pk=current_trainee.pk)
 
             serializer = self.serializer_class(trainee_team_members, many=True)
@@ -109,13 +111,17 @@ class ListTeamMembersAPIView(ListAPIView):
                 trainee_dict['image'] = trainee['image']
                 trainee_dict['social_url'] = trainee['user']['social_url']
                 trainee_dict['event'] = trainee['event']['id'] if trainee['event'] else None
+                trainee_dict['stages'] = serialize_stages(all_stages.filter(event=trainee['event']['id'], is_active=True)) \
+                    if trainee['event'] else []
                 data.append(trainee_dict)
         return Response({"trainee":
                              {"id": current_trainee.pk,
                               "username": current_trainee.user.username,
                               "internship": current_trainee.internship,
                               "image": current_trainee.image.url if current_trainee.image else None,
-                              "event": current_trainee.event.id if current_trainee.event else None},
+                              "event": current_trainee.event.id if current_trainee.event else None,
+                              "stages": serialize_stages(all_stages.filter(event=current_trainee.event.id , is_active=True)) \
+                    if current_trainee.event else []},
                          "team": data}, status=status.HTTP_200_OK)
 
 
@@ -212,10 +218,10 @@ class ReportAPIView(RetrieveAPIView):
         team_rating_query = grades_query.filter(team=trainee.team)
         expert_rating_query = grades_query.exclude(user__system_role="TRAINEE")
 
-        general_rating = _get_rating(cash)
-        self_rating = _get_rating(self_rating_query)
-        team_rating = _get_rating(team_rating_query)
-        expert_rating = _get_rating(expert_rating_query)
+        general_rating = get_rating(cash)
+        self_rating = get_rating(self_rating_query)
+        team_rating = get_rating(team_rating_query)
+        expert_rating = get_rating(expert_rating_query)
 
         return Response({"rating": {
             "general": general_rating,

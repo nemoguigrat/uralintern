@@ -2,23 +2,33 @@ import random
 import string
 
 
-def _generate_password():
+def serialize_stages(stages):
+    data = []
+    for stage in stages:
+        data.append({
+            'id': stage.pk,
+            'stage_name': stage.stage_name
+        })
+
+    return data
+
+def generate_password():
     """Созадет случайный пароль размерами от 8 до 12 символов из букв латиницы верхнего и нижнего регистра и цифр"""
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
     size = random.randint(8, 12)
     return ''.join(random.choice(chars) for x in range(size))
 
 
-def _get_report(trainee, grades):
+def get_report(trainee, grades):
     general_rating_query = grades.filter(trainee=trainee)
     self_rating_query = grades.filter(user=trainee.user)
     team_rating_query = grades.filter(team=trainee.team)
     expert_rating_query = grades.exclude(user__system_role="TRAINEE")
 
-    general_rating = _get_rating(general_rating_query)
-    self_rating = _get_rating(self_rating_query)
-    team_rating = _get_rating(team_rating_query)
-    expert_rating = _get_rating(expert_rating_query)
+    general_rating = get_rating(general_rating_query)
+    self_rating = get_rating(self_rating_query)
+    team_rating = get_rating(team_rating_query)
+    expert_rating = get_rating(expert_rating_query)
 
     return {
         "general": general_rating,
@@ -27,7 +37,7 @@ def _get_report(trainee, grades):
         "expert": expert_rating}
 
 
-def _get_rating(grades):
+def get_rating(grades):
     """Подсчет оценок для стажеров по компетенциям
 
     :param grades: QuerySet объектов модели Grades
@@ -48,7 +58,7 @@ def _get_rating(grades):
             "competence4": average(rating_list[3])}
 
 
-def _upload_to(instance, filename: str):
+def upload_to(instance, filename: str):
     """ Установливает имя для загруженного изображения в Trainee models.py
 
     :param instance: Экземпляр объекта, для которого устанавливается изображение

@@ -10,7 +10,7 @@ from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
-from .functions import _upload_to
+from .functions import upload_to
 
 
 class UserManager(BaseUserManager):
@@ -110,7 +110,7 @@ class Trainee(models.Model):
     speciality = models.CharField(max_length=150, blank=True, verbose_name="Специальность")
     institution = models.CharField(max_length=150, blank=True, verbose_name="Учебное заведение")
     team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Команда")
-    image = models.ImageField(upload_to=_upload_to, blank=True, null=True,
+    image = models.ImageField(upload_to=upload_to, blank=True, null=True,
                               validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
     event = models.ForeignKey('Event', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Мероприятие")
     date_start = models.DateField(auto_created=True, verbose_name="Дата старта")

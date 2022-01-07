@@ -12,7 +12,7 @@ from .models import *
 from import_export.admin import ExportMixin
 from .resources import GradeResource
 from django.contrib import messages
-from .functions import _generate_password
+from .functions import generate_password
 from .forms import CsvImportForm, UserCreationForm
 
 admin.site.unregister(Group)
@@ -126,7 +126,7 @@ class TraineeAdmin(admin.ModelAdmin):
         latest_user = User.objects.latest('pk')
         for data in all_data:
             if "Частный e-mail" in data.keys() and "ФИО" in data.keys() and data["Частный e-mail"]:
-                random_password = _generate_password()
+                random_password = generate_password()
 
                 user = User(username=data["ФИО"], email=data["Частный e-mail"], social_url=data["Личная страница"])
                 user.set_password(random_password)

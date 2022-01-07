@@ -107,12 +107,18 @@ class CuratorSerializer(serializers.Serializer):
         fields = "__all__"
 
 
-class TeamSerializer(serializers.ModelSerializer):
+class TeamForTraineeSerializer(serializers.ModelSerializer):
     curator = CuratorSerializer()
 
     class Meta:
         model = Team
         fields = ('team_name', 'curator')
+        read_only_fields = fields
+
+class TeamForTeamMembersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ('team_name',)
         read_only_fields = fields
 
 class EventSerializer(serializers.ModelSerializer):
@@ -122,7 +128,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 class TraineeSerializer(serializers.ModelSerializer):
     user = UserNameSerializer()
-    team = TeamSerializer()
+    team = TeamForTraineeSerializer()
     event = EventSerializer()
 
     class Meta:
@@ -151,7 +157,7 @@ class TraineeImageSerializer(serializers.Serializer):
 class TraineeTeamSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     user = UserNameSerializer()
-    team = TeamSerializer(required=True)
+    team = TeamForTeamMembersSerializer(required=True)
     internship = serializers.CharField(max_length=100, allow_blank=True)
     image = serializers.ImageField(use_url=True)
     event = EventSerializer()

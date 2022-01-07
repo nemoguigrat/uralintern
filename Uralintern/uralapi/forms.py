@@ -1,7 +1,7 @@
 from .models import *
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .functions import _generate_password
+from .functions import generate_password
 
 class CsvImportForm(forms.Form):
     csv_file = forms.FileField(label="Файл в формате CSV UTF-8")
@@ -27,7 +27,7 @@ class UserCreationForm(forms.ModelForm):
     def save(self, commit=True):
         user = super(UserCreationForm, self).save(commit=False)
         if self.cleaned_data['is_random_password']:
-            user.set_password(_generate_password())
+            user.set_password(generate_password())
         else:
             user.set_password(self.cleaned_data['password1'])
         if commit:
