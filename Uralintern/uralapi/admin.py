@@ -39,7 +39,7 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('username',)
     actions = ["send_emails"]
 
-    def send_emails(self, queryset):
+    def send_emails(self, request,queryset):
         """
         Действие в выпадающем списке в панели администратора, рассылка сообщения выбранным пользователям на почтовые ящики
         """

@@ -97,7 +97,8 @@ class ListTeamMembersAPIView(ListAPIView):
         cash = list(all_stages)
 
         if trainee_team:
-            trainee_team_members = Trainee.objects.select_related('user', 'team', 'event').filter(team__pk=trainee_team.pk).exclude(
+            trainee_team_members = Trainee.objects.select_related('user', 'team', 'event').filter(
+                team__pk=trainee_team.pk).exclude(
                 pk=current_trainee.pk)
 
             serializer = self.serializer_class(trainee_team_members, many=True)
@@ -111,7 +112,8 @@ class ListTeamMembersAPIView(ListAPIView):
                 trainee_dict['image'] = trainee['image']
                 trainee_dict['social_url'] = trainee['user']['social_url']
                 trainee_dict['event'] = trainee['event']['id'] if trainee['event'] else None
-                trainee_dict['stages'] = serialize_stages(all_stages.filter(event=trainee['event']['id'], is_active=True)) \
+                trainee_dict['stages'] = serialize_stages(
+                    all_stages.filter(event=trainee['event']['id'], is_active=True)) \
                     if trainee['event'] else []
                 data.append(trainee_dict)
         return Response({"trainee":
@@ -120,42 +122,53 @@ class ListTeamMembersAPIView(ListAPIView):
                               "internship": current_trainee.internship,
                               "image": current_trainee.image.url if current_trainee.image else None,
                               "event": current_trainee.event.id if current_trainee.event else None,
-                              "stages": serialize_stages(all_stages.filter(event=current_trainee.event.id , is_active=True)) \
-                    if current_trainee.event else []},
+                              "stages": serialize_stages(
+                                  all_stages.filter(event=current_trainee.event.id, is_active=True)) \
+                                  if current_trainee.event else []},
                          "team": data}, status=status.HTTP_200_OK)
 
 
-class ListTeamMembersForCuratorAPIView(ListAPIView):
+class ListTeamMembersForExpertAPIView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer,)
     serializer_class = TraineeTeamSerializer
     parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, *args, **kwargs):
-        if request.user.system_role != 'CURATOR':
-            raise exceptions.PermissionDenied('Пользователь не является куратором!')
-        curator = Curator.objects.select_related('user').get(user=request.user)
-        teams_members = Trainee.objects.select_related('user', 'team').filter(team__curator=curator).order_by('team__team_name')
+        teams_members = None
+        role = request.user.system_role
 
+        if role == 'TRAINEE':
+            raise exceptions.PermissionDenied('Пользователь не является экспертом!')
+        elif role == 'CURATOR':
+            curator = Curator.objects.select_related('user').get(user=request.user)
+            teams_members = Trainee.objects.select_related('user', 'team').filter(team__curator=curator).order_by(
+                'team__team_name')
+        else:
+            teams_members = Trainee.objects.select_related('user', 'team').all().order_by('team__team_name')
+
+        all_stages = Stage.objects.select_related('event').all()
         serializer = self.serializer_class(teams_members, many=True)
-
+        cash = list(all_stages)
         data = {}
         for trainee in serializer.data:
             trainee_dict = {}
             trainee_dict['id'] = trainee['id']
             trainee_dict['username'] = trainee['user']['username']
-            trainee_dict['team_name'] = trainee['team']['team_name']
+            trainee_dict['team_name'] = trainee['team']['team_name'] if trainee['team'] else 'Без команды'
             trainee_dict['internship'] = trainee['internship']
             trainee_dict['image'] = trainee['image']
             trainee_dict['social_url'] = trainee['user']['social_url']
             trainee_dict['event'] = trainee['event']['id'] if trainee['event'] else None
+            trainee_dict['stages'] = serialize_stages(all_stages.filter(event=trainee['event']['id'], is_active=True)) \
+                if trainee['event'] else []
 
             if trainee_dict['team_name'] not in data.keys():
                 data[trainee_dict['team_name']] = [trainee_dict]
             else:
                 data[trainee_dict['team_name']].append(trainee_dict)
 
-        return Response({"teams" : data}, status=status.HTTP_200_OK)
+        return Response({"teams": data}, status=status.HTTP_200_OK)
 
 
 class ListGradeToTraineeAPIView(ListAPIView):
