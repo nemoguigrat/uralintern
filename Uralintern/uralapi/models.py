@@ -14,7 +14,12 @@ from .functions import upload_to
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, username, email, password=None, role='TRAINEE'):
+    def create_user(self, username, email, password=None, role='TRAINEE') -> 'User':
+        """
+        Перегрузка метода. Создает нового пользователя
+        :param role: роль(TRAINEE, CURATOR, EXPERT, ADMIN)
+        :return: User
+        """
         if username is None:
             raise TypeError('Users must have a username.')
         if len(username.split()) < 2:
@@ -29,7 +34,7 @@ class UserManager(BaseUserManager):
 
         return user
 
-    def create_superuser(self, username, email, password):
+    def create_superuser(self, username, email, password) -> 'User':
         if password is None:
             raise TypeError('Superusers must have a password.')
 
@@ -58,7 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата регистрации")
     updated_at = models.DateTimeField(auto_now=True)
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'email' # поле, используемое для авторизации
     REQUIRED_FIELDS = ['username', ]
 
     objects = UserManager()
@@ -74,7 +79,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
-        self.unhashed_password = raw_password
+        self.unhashed_password = raw_password # промежуточно сохраняет пароль и в тоже время хэширует его
         self._password = raw_password
 
     @property
@@ -87,12 +92,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         return self.username
 
-    def _generate_jwt_token(self):
-        dt = datetime.now() + timedelta(days=30)
+    def _generate_jwt_token(self) -> str:
+        dt = datetime.now() + timedelta(days=30) # время жизни токена
 
         token = jwt.encode({
             'id': self.pk,
-            'exp': dt.utcfromtimestamp(dt.timestamp())  # CHANGE HERE
+            'exp': dt.utcfromtimestamp(dt.timestamp())
         }, settings.SECRET_KEY, algorithm='HS256')
 
         return token
@@ -103,6 +108,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Trainee(models.Model):
+    # Модель пользователя была переопределена, для аторизации данные о новой модели берерутся из настроек
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="ФИО")
     internship = models.CharField(max_length=150, blank=True, verbose_name="Напр. стажировки")
     course = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Курс",
@@ -119,7 +125,12 @@ class Trainee(models.Model):
         return self.user.__str__()
 
     @property
-    def get_image_name(self):
+    def get_image_name(self) -> str:
+        """
+        Извлекает название файла изображения
+
+        :return: имя файла
+        """
         if self.image:
             return self.image.name.split('/')[1].strip()
 
@@ -176,6 +187,7 @@ class Stage(models.Model):
         verbose_name_plural = "Этапы"
 
     def clean(self):
+        # Активирует этап, только если мероприятие, к которуму он привязан активно
         if not self.event.is_active and self.is_active:
             raise ValidationError("Невозможно активировать этап, мероприятие не активно")
 
@@ -194,6 +206,7 @@ class Event(models.Model):
 
     def save(self, *args, **kwargs):
         super(Event, self).save(*args, **kwargs)
+        # Закроет все этапы, которые относятся к этому мероприятию
         if not self.is_active:
             Stage.objects.filter(event=self.pk).update(is_active=False)
 
@@ -202,6 +215,7 @@ class Grade(models.Model):
     trainee = models.ForeignKey('Trainee', on_delete=models.CASCADE, verbose_name="Имя оцениваемого")
     team = models.ForeignKey('Team', on_delete=models.CASCADE, verbose_name="Команда", null=True, blank=True)
     stage = models.ForeignKey('Stage', on_delete=models.CASCADE, verbose_name="Этап")
+    # -1 <= Оценка <= 2
     competence1 = models.SmallIntegerField(blank=True, null=True, verbose_name="Вовлеченность",
                                            validators=[MinValueValidator(-1), MaxValueValidator(2)])
     competence2 = models.SmallIntegerField(blank=True, null=True, verbose_name="Организованность",
@@ -218,7 +232,7 @@ class Grade(models.Model):
         unique_together = ("user", "trainee", "stage")
 
     def save(self, *args, **kwargs):
-        self.team = self.trainee.team# do whatever processing you want
+        self.team = self.trainee.team
         super(Grade, self).save(*args, **kwargs)
 
 

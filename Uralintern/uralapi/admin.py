@@ -72,6 +72,10 @@ class TraineeAdmin(admin.ModelAdmin):
     list_editable = ('event',)
 
     def get_urls(self):
+        """
+        Перегрузка метода. Добавляет новый url и обработчик на страницу
+        :return: URL адрса на стрнице
+        """
         urls = super().get_urls()
         my_urls = [
             path('import-csv/', self.admin_site.admin_view(self.import_csv),
@@ -140,13 +144,16 @@ class TraineeAdmin(admin.ModelAdmin):
         users = User.objects.filter(pk__gt=latest_user.pk).order_by("-pk")
         users_with_data = {}
         for user in users:
+            # Сопоставление пользователей и их данных из словаря
             if user.username in validated_data.keys():
                 users_with_data[user] = validated_data[user.username]
 
         teams = Team.objects.all()
         events = Event.objects.all()
+
         cash_team = list(teams)
         cash_events = list(events)
+
         for user, data in users_with_data.items():
             team = teams.filter(team_name=data["Команда"]).first()
             event = events.filter(event_name=data["Мероприятие"]).first()
@@ -162,7 +169,7 @@ class TraineeAdmin(admin.ModelAdmin):
 
             local_trainees.append(trainee)
         with transaction.atomic():
-            Trainee.objects.bulk_create(local_trainees, ignore_conflicts=True)  # ignore_conflict=True
+            Trainee.objects.bulk_create(local_trainees, ignore_conflicts=True)
 
 
 @admin.register(Team)
@@ -203,6 +210,10 @@ class GradeAdmin(ExportMixin, admin.ModelAdmin):
     search_fields = ('user__username', 'trainee__user__username', 'stage__stage_name')
 
     def get_readonly_fields(self, request, obj=None):
+        """
+        Перегрузка метода. Закрывает редактирование некоторых полей, после создания объекта
+        :return: Поля, которые должны быть не редактируемыми
+        """
         if obj:
             return ('user', 'trainee', 'stage', 'team')
         else:

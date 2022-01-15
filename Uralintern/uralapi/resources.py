@@ -7,6 +7,11 @@ from .models import Grade, Trainee, User, Team, Stage
 
 class GradeResource(ModelResource):
     def get_export_headers(self):
+        """
+        Перегрузка метода. Локализация полей таблицы. Сопоставит verbose_name поля и само поле таблицы.
+
+        :return: Имена полей
+        """
         headers = super().get_export_headers()
         model_verbose = dict([(field.name, field.verbose_name) for field in Grade._meta.get_fields()])
         for index in range(len(headers)):

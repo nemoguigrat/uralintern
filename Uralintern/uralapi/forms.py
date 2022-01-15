@@ -26,6 +26,7 @@ class UserCreationForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super(UserCreationForm, self).save(commit=False)
+        # Если is_random_password выбран, то создать случайный пароль
         if self.cleaned_data['is_random_password']:
             user.set_password(generate_password())
         else:

@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+# переменные окружения в файле .env
 envpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '.env')
 if os.path.exists(envpath):
     load_dotenv(envpath, override=True)
@@ -212,6 +212,8 @@ if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# в зависимости от сервиса для рассылок выствлять TSL или SSL
 
 EMAIL_USE_TLS = True
 

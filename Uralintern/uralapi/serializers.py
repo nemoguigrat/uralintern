@@ -42,9 +42,6 @@ class LoginSerializer(serializers.Serializer):
                 'A user with this email and password was not found.'
             )
 
-        # Django предоставляет флаг is_active для модели User. Его цель
-        # сообщить, был ли пользователь деактивирован или заблокирован.
-        # Проверить стоит, вызвать исключение в случае True.
         if not user.is_active:
             raise serializers.ValidationError(
                 'This user has been deactivated.'
@@ -62,11 +59,11 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserTokenSerializer(serializers.ModelSerializer):
-    """ Ощуществляет сериализацию и десериализацию объектов User. """
+    """
+    Сериализует поля 'id', 'email', 'username', 'system_role', 'password', 'token' из модели User
+    """
 
-    # Пароль должен содержать от 8 до 128 символов. Это стандартное правило. Мы
-    # могли бы переопределить это по-своему, но это создаст лишнюю работу для
-    # нас, не добавляя реальных преимуществ, потому оставим все как есть.
+    # Пароль должен содержать от 8 до 128 символов. Это стандартное правило.
     password = serializers.CharField(
         max_length=128,
         min_length=8,
@@ -77,16 +74,11 @@ class UserTokenSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'username', 'system_role', 'password', 'token',)
 
-        # Параметр read_only_fields является альтернативой явному указанию поля
-        # с помощью read_only = True, как мы это делали для пароля выше.
-        # Причина, по которой мы хотим использовать здесь 'read_only_fields'
-        # состоит в том, что нам не нужно ничего указывать о поле. В поле
-        # пароля требуются свойства min_length и max_length,
-        # но это не относится к полю токена.
         read_only_fields = fields
 
 
 class UserNameSerializer(serializers.ModelSerializer):
+    """Сериализует поля 'id', 'username', 'social_url' из модели User"""
     class Meta:
         model = User
         fields = ('id', 'username', 'social_url')
@@ -100,6 +92,7 @@ class StageSerializer(serializers.ModelSerializer):
 
 
 class CuratorSerializer(serializers.Serializer):
+    # Использование дугого сериализатора для поля, дает возможноть извлечь информацию в удобном виде из родительской модели
     user = UserNameSerializer()
 
     class Meta:
@@ -108,6 +101,9 @@ class CuratorSerializer(serializers.Serializer):
 
 
 class TeamForTraineeSerializer(serializers.ModelSerializer):
+    """Сериализация информации о команде для авторизованого стажера(содержит информацию о кураторе)"""
+
+    # Использование дугого сериализатора для поля, дает возможноть извлечь информацию в удобном виде из родительской модели
     curator = CuratorSerializer()
 
     class Meta:
@@ -116,6 +112,7 @@ class TeamForTraineeSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 class TeamForTeamMembersSerializer(serializers.ModelSerializer):
+    """Сериализация информации о команде для членов команды(содержит только название команды)"""
     class Meta:
         model = Team
         fields = ('team_name',)
@@ -127,6 +124,7 @@ class EventSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class TraineeSerializer(serializers.ModelSerializer):
+    # Использование дугого сериализатора для поля, дает возможноть извлечь информацию в удобном виде из родительской модели
     user = UserNameSerializer()
     team = TeamForTraineeSerializer()
     event = EventSerializer()
@@ -149,12 +147,14 @@ class TraineeImageSerializer(serializers.Serializer):
     image = serializers.ImageField(use_url=True, validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])])
 
     def update(self, instance: Trainee, validated_data):
+        # Если в словаре есть такой ключ, перепишет данные в базе, либо оствит то, что было
         instance.image = validated_data.get('image', instance.image)
         instance.save()
         return instance
 
 
 class TraineeTeamSerializer(serializers.Serializer):
+    # Использование дугого сериализатора для поля, дает возможноть извлечь информацию в удобном виде из родительской модели
     id = serializers.IntegerField()
     user = UserNameSerializer()
     team = TeamForTeamMembersSerializer(required=True)
@@ -185,6 +185,7 @@ class UpdateGradeSerializer(serializers.ModelSerializer):
         return Grade.objects.create(**validated_data)
 
     def update(self, instance: Grade, validated_data):
+        # Далее, если в словаре есть такой ключ, перепишет данные в базе, либо оствит то, что было
         instance.competence1 = validated_data.get('competence1', instance.competence1)
         instance.competence2 = validated_data.get('competence2', instance.competence2)
         instance.competence3 = validated_data.get('competence3', instance.competence3)
@@ -198,7 +199,7 @@ class UpdateGradeSerializer(serializers.ModelSerializer):
             raise ValidationError('Обязательлное поле trainee')
         if 'stage' not in grade.keys():
             raise ValidationError('Обязательлное поле stage')
-
+        # Проверяет активен ли этап, по которому дают оценку, если нет, то оцнить по нему нельзя, будет брошенно исключение
         if not grade['stage'].is_active:
             raise ValidationError('Невозможно дать оценку по не активному этапу!')
 
